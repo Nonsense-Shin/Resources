@@ -1,2 +1,2 @@
 # Resources
-My notes from when I entered the field.
+My notes from when I entered the field. Take a peek.

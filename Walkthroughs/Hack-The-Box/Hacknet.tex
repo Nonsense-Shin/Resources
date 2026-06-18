@@ -1,0 +1,58 @@
+Note : This was made after I played around with the box so I don't think it will be much helpful
+Another note : I hate Privilege escalation so , so no root haha
+
+[ Nmap ]
+
+Nmap scan report for 10.10.11.85
+Host is up (0.10s latency).
+Not shown: 65533 closed tcp ports (reset)
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 9.2p1 Debian 2+deb12u7 (protocol 2.0)
+| ssh-hostkey:
+|   256 95:62:ef:97:31:82:ff:a1:c6:08:01:8c:6a:0f:dc:1c (ECDSA)
+|_  256 5f:bd:93:10:20:70:e6:09:f1:ba:6a:43:58:86:42:66 (ED25519)
+
+80/tcp open  http    nginx 1.22.1
+|_http-server-header: nginx/1.22.1
+|_http-title: Did not follow redirect to http://hacknet.htb/
+Device type: general purpose|router
+Running: Linux 4.X|5.X, MikroTik RouterOS 7.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3
+OS details: Linux 4.15 - 5.19, MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 80/tcp)
+HOP RTT       ADDRESS
+1   102.06 ms 10.10.14.1
+2   102.14 ms 10.10.11.85
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Mon Oct 13 04:57:44 2025 -- 1 IP address (1 host up) scanned in 86.62 seconds
+
+## We need to manipulate the web server and get credentials 
+
+In Short : We find a SSTI ( Server Side Templete Injection) 
+  -  We change our username into something like {{ users.1.email }} and {{ users.1.password }} <- This is done in Sequence not both at once
+  - Then we like a post and see who who liked the comment
+  - If we use burp to look at the response it provides the credentials of who who liked the comment
+
+# If there are 5 people who liked that post then see in which sequence ( number ) your target is at and update your username into that number 
+    Example : If your target is the fifth user who has liked the post then,
+                    - First you change your username into {{ users.5.email }} // this gives you their email in respone of burp or curl
+                    - Second {{ users.5.password }} // this gives you their password
+
+#  YOU CAN USE CURL AS WELL BUT BURP WORKS BETTER FOR ME 
+
+# Next Step : Compromise a user that is friends with backdoor bandit
+  // Our target is to Compromise backdoor bandit name user who has liked only one post but that post is private 
+  // That user who posted the post [ deepdive I think ] that was liked by backdoor bandit has liked other public posts
+
+[Steps..]
+Update username → Like the post →  Visit /likes/23 (all while proxied).
+
+So Compromise the user then compromise backdoor bandit and you get -> SSH
+[Finally got ssh creds...]
+mikey@hacknet.htb 
+
+That was it Happy Hunting HAHA
