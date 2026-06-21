@@ -514,6 +514,8 @@ _______________________________________________________
 __________________________________________________________________________________________________________________________________________________________________
 *Scrape all ips and domains from a page*
 ```
+## Copy the ip ##
+
 copy([...new Set(document.body.innerText.match(/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g))].join('\n')); console.log("[+] Unique IPs copied to your clipboard!");
 
 ## if you want both ip and port ##
@@ -523,6 +525,12 @@ copy([...new Set(document.body.innerText.match(/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\
 or
 
 const m = document.body.innerText.match(/(?:[0-9]{1,3}\.){3}[0-9]{1,3}\s*:\s*\d+/g) || []; copy([...new Set(m.map(x => x.replace(/\s+/g, '')))].join('\n')); console.log("[+] Unique targets copied cleanly!");
+
+or
+
+{ const targets = document.body.innerText.match(/(?:[0-9]{1,3}\.){3}[0-9]{1,3}\s*:\s*\d+/g) || []; copy([...new Set(targets.map(x => x.replace(/\s+/g, '')))].join('\n')); console.log(`[+] Copied ${[...new Set(targets)].length} unique targets cleanly!`); }
+
+## Copy the domain ##
 
 copy([...new Set(document.body.innerText.match(/\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}\b/g))].filter(d => !d.endsWith('.js') && !d.toLowerCase().includes('createelement')).join('\n')); console.log("[+] Unique domains copied to your clipboard!");
 ```
