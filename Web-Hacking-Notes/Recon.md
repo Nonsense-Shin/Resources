@@ -530,6 +530,10 @@ or
 
 { const targets = document.body.innerText.match(/(?:[0-9]{1,3}\.){3}[0-9]{1,3}\s*:\s*\d+/g) || []; copy([...new Set(targets.map(x => x.replace(/\s+/g, '')))].join('\n')); console.log(`[+] Copied ${[...new Set(targets)].length} unique targets cleanly!`); }
 
+## app a specific port at the end of app ips / domains ##
+
+sed -i 's/$/:8015/' ip_with_no_8015.txt
+
 ## Copy the domain ##
 
 copy([...new Set(document.body.innerText.match(/\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}\b/g))].filter(d => !d.endsWith('.js') && !d.toLowerCase().includes('createelement')).join('\n')); console.log("[+] Unique domains copied to your clipboard!");
