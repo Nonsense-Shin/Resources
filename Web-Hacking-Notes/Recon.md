@@ -510,6 +510,10 @@ _______________________________________________________
 -  tlsx -l ipFile.txt -san -cn -silent
 
 - tlsx -l ipFile.txt -p 443,8443,9443 -san -cn -c 5 -scan-mode openssl -json -o ipInfo.json
+tlsx -l ipFile.txt -p 443,8443,9443 -san -cn -ve -silent -json -o ipInfo.json
+
+   format the json data
+jq -r '[.ip, .port, .subject_cn, (.subject_an | join(","))] | @tsv' ipInfo.json
 ```
 __________________________________________________________________________________________________________________________________________________________________
 *Scrape all ips and domains from a page*
