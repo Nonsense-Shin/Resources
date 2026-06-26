@@ -518,6 +518,8 @@ jq -r '[.ip, .port, .subject_cn, (.subject_an | join(","))] | @tsv' ipInfo.json
 # use this if you have a whole file containig ip as well as vulnerability information but you just want the ip and their respected domain
 
 grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' VulnIp.md | sort -u | tlsx -silent -json | jq -r '"\(.ip) -> \([.subject_cn, (.subject_an // [])[]] | unique | join(", "))"'
+	or better...
+grep -oE 'https?://[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' VulnIp.md | sed 's|https://||;s|http://||' | sort -u | tlsx -silent -json | jq -r '"\(.ip) -> \([.subject_cn, (.subject_an // [])[]] | unique | join(", "))"'
 ```
 __________________________________________________________________________________________________________________________________________________________________
 *Scrape all ips and domains from a page*
