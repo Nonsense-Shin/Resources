@@ -520,6 +520,12 @@ jq -r '[.ip, .port, .subject_cn, (.subject_an | join(","))] | @tsv' ipInfo.json
 grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' VulnIp.md | sort -u | tlsx -silent -json | jq -r '"\(.ip) -> \([.subject_cn, (.subject_an // [])[]] | unique | join(", "))"'
 	or better...
 grep -oE 'https?://[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' VulnIp.md | sed 's|https://||;s|http://||' | sort -u | tlsx -silent -json | jq -r '"\(.ip) -> \([.subject_cn, (.subject_an // [])[]] | unique | join(", "))"'
+
+# Find all the port having domains in your file
+ awk -F':' '{print $2}' domains.txt | sort | uniq -c
+
+    [ Grep only that specific port you want from the domain]
+	grep -E ':10000$' domains.txt 
 ```
 __________________________________________________________________________________________________________________________________________________________________
 *Scrape all ips and domains from a page*
