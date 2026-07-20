@@ -80,7 +80,7 @@ ________________________________________________________________________________
 > 
 - **Subdomain Enumeration**
     - Tools: `subfinder`, `amass`, `assetfinder`, `crt.sh`
-      `curl -s "https://crt.sh/?O=example%20com.&output=json" | jq -r ".[].common_name" | tr A-Z a-z | unfurl format %r.%t | sort -u | tee example_cert.txt`
+      - `curl -s "https://crt.sh/?O=example%20com.&output=json" | jq -r ".[].common_name" | tr A-Z a-z | unfurl format %r.%t | sort -u | tee example_cert.txt`
     - Bruteforce with wordlists (`dnscan`, `dnsx`)
 - **Port Scanning**
     - `nmap -sV -sC -T4 target.com`
